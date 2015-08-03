@@ -309,8 +309,8 @@ class SoftPlus:
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
 		self.previoushidden = self.exponential(self.previousinput)
-		self.previousoutput = self.function(self.previousinput)
+		self.previousoutput = self.function(self.previoushidden)
 		return self.previousoutput
 
 	def backpropagate(self, outputvector):
-		return self.hadamard(outputvector, self.derivative(self.previousoutput))
+		return self.hadamard(outputvector, self.derivative(self.previoushidden))
