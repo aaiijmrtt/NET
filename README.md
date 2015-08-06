@@ -181,3 +181,8 @@ datamembers.
 		myoptimizer.train()
 
 		print "error:", myoptimizer.test()
+
+**Note**:
+
+The module must be properly pointed to when running your code. Hint: Simply run
+from the parent directory.
