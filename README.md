@@ -4,7 +4,7 @@
 
 Putting Neural Networks together should be easier than it usually is. The code
 in this repository presents simple Python snippets designed to make prototyping
-neural network architectures easy.
+neural network architectures quick.
 
 **Note**:
 
@@ -13,8 +13,10 @@ neural network architectures easy.
 
 ##Classes
 
-Each class has feedforward, backpropagate, updateweights and cleardeltas methods.
-Each class has previousinput and previousoutput datamembers.
+Each class (except Optimizer) has feedforward and backpropagate methods, which
+return the forwardfed output and the backpropagated delta vector, respectively.
+Each object (except of Optimizer objects) has previousinput and previousoutput
+datamembers.
 
 1. **Layers**:
 
@@ -22,7 +24,29 @@ Each class has previousinput and previousoutput datamembers.
 
 			f(x) = W * x + b
 
+	* **Split**:
+
+			f(x) = [x, x ... x]
+
+	* **MergeSum**:
+
+			f([x1, x2 .. xn])(i) = sum_over_j(xj(i))
+
+	* **MergeProduct**:
+
+			f([x1, x2 .. xn])(i) = product_over_j(xj(i))
+
+	* **Velocity**: modifier applicable to training of Linear layers
+
+	* **Regularization**: modifier applicable to training of Linear layers
+
+	* **Dropout**: modifier applicable to training of Linear layers
+
 2. **Transfer Functions**:
+
+	* **ShiftScale**:
+
+			f(x)(i) = p1 * x(i) + p2
 
 	* **Sigmoid**:
 
@@ -81,38 +105,38 @@ Each class has previousinput and previousoutput datamembers.
 
 			f([x1, x2 ... xn]) = [f1(x1), f2(x2) ... fn(xn)]
 
+5. **Optimizers**:
+
+	* **Optimizer**: simplifies training and testing
+
 **Note**:
 
-* (i) indexing is used to denote the i-th component of a vector.
+* x(i) indexing is used to denote the i-th component of a vector x.
 * \[x1, x2\] is used to denote vector concanetation.
 
 ##Sample Code
 
-1. **Putting together a simple network**:
+1. **Putting Together a Simple Network**:
 
-		# Input -> Linear -> Sigmoid -> Parallel Linear -> HyperbolicTangent -> Linear -> Output
+		# Input -> Linear -> HyperbolicTangent -> Linear -> MeanSquared (Error) -> Output
 
 		import net
 
 		n_input = 2
-		n_hidden1 = 6
-		n_hidden2 = 6
+		n_hidden = 6
 		n_output = 1
 
 		myseriesnet = net.Series()
-		myseriesnet.addlayer(net.Linear(n_input, n_hidden1))
-		myseriesnet.addlayer(net.Sigmoid(n_hidden1))
 
-		myparallelnet = net.Parallel()
-		myparallelnet.addlayer(net.Linear(n_hidden1 / 2, n_hidden2 / 2))
-		myparallelnet.addlayer(net.Linear(n_hidden1 / 2, n_hidden2 / 2))
-
-		myseriesnet.addlayer(myparallelnet)
-		myseriesnet.addlayer(net.HyperbolicTangent(n_hidden2))
-		myseriesnet.addlayer(net.Linear(n_hidden2, n_output))
+		myseriesnet.addlayer(net.Linear(n_input, n_hidden))
+		myseriesnet.addlayer(net.HyperbolicTangent(n_hidden))
+		myseriesnet.addlayer(net.Linear(n_hidden, n_output))
 		myseriesnet.addlayer(net.MeanSquared(n_output))
 
-2. **Training on a simple function**:
+		myseriesnet.applyvelocity(0.9)
+		myseriesnet.applyregularization()
+
+2. **Creating a Toy Dataset**:
 
 		# f(0, 0) = 0
 		# f(0, 1) = 1
@@ -121,39 +145,39 @@ Each class has previousinput and previousoutput datamembers.
 
 		import numpy
 
-		x = numpy.zeros((n_input, 1), dtype = float)
-		y = numpy.zeros((n_output, 1), dtype = float)
+		mytrainingset = list()
 
-		for i in range(10004):
+		for i in range(500):
+
+			x = numpy.zeros((n_input, 1), dtype = float)
+			y = numpy.zeros((n_output, 1), dtype = float)
 
 			if i % 4 == 0:
 				x[0][0] = 0.0
 				x[1][0] = 0.0
 				y[0][0] = 0.0
+				mytrainingset.append((x, y))
 			elif i % 4 == 1:
 				x[0][0] = 0.0
 				x[1][0] = 1.0
 				y[0][0] = 1.0
+				mytrainingset.append((x, y))
 			elif i % 4 == 2:
 				x[0][0] = 1.0
 				x[1][0] = 0.0
 				y[0][0] = 1.0
+				mytrainingset.append((x, y))
 			else:
 				x[0][0] = 1.0
 				x[1][0] = 1.0
 				y[0][0] = 0.0
+				mytrainingset.append((x, y))
 
-			if i < 10000:
-				myseriesnet.feedforward(x)
-				myseriesnet.backpropagate(y)
-				myseriesnet.updateweights()
-			else:
-				print x, myseriesnet.feedforward(x)
+		mytestingset = mytrainingset
 
-**Note**:
+3. **Training and Testing the Network**:
 
-The overparameterization is a result of the need to display basic functionality,
-while the overfitting is a result of the need for the data to be simple and for
-the optimization to converge reliably. This reflects my opinion that first
-examples should be unnecessarily simple and work unreasonably well. Run the
-example from the parent directory.
+		myoptimizer = net.Optimizer(myseriesnet, mytrainingset, mytestingset, lambda x, y: 0.5 * (x - y) ** 2)
+		myoptimizer.train()
+
+		print "error:", myoptimizer.test()

@@ -21,11 +21,13 @@ class Series:
 
 	def cleardeltas(self):
 		for layer in self.layers:
-			layer.cleardeltas()
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel']:
+				layer.cleardeltas()
 
 	def updateweights(self):
 		for layer in self.layers:
-			layer.updateweights()
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel']:
+				layer.updateweights()
 
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
@@ -38,6 +40,31 @@ class Series:
 		for layer in reversed(self.layers):
 			outputvector = layer.backpropagate(outputvector)
 		return outputvector
+
+	def trainingsetup(self):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel']:
+				layer.trainingsetup()
+
+	def testingsetup(self):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel']:
+				layer.trainingsetup()
+
+	def applyvelocity(self, gamma = None):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel']:
+				layer.applyvelocity(gamma)
+
+	def applyregularization(self, lamda = None, regularizer = None):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel']:
+				layer.applyregularization(lamda, regularizer)
+
+	def applydropout(self, probability = None):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel']:
+				layer.applydropout(probability)
 
 class Parallel:
 
@@ -86,3 +113,28 @@ class Parallel:
 		for layer, layeroutput in zip(self.layers, numpy.split(outputvector, self.outputdimensions[1: -1])):
 			layerdeltas.append(layer.backpropagate(layeroutput))
 		return numpy.concatenate(layerdeltas)
+
+	def trainingsetup(self):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel']:
+				layer.trainingsetup()
+
+	def testingsetup(self):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel']:
+				layer.trainingsetup()
+
+	def applyvelocity(self, gamma = None):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel']:
+				layer.applyvelocity(gamma)
+
+	def applyregularization(self, lamda = None, regularizer = None):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel']:
+				layer.applyregularization(lamda, regularizer)
+
+	def applydropout(self, probability = None):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel']:
+				layer.applydropout(probability)

@@ -19,12 +19,6 @@ class Sigmoid:
 		self.derivative = numpy.vectorize(lambda x: x * (1.0 - x))
 		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
-	def cleardeltas(self):
-		pass
-
-	def updateweights(self):
-		pass
-
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
 		self.previousoutput = self.function(self.previousinput)
@@ -51,12 +45,6 @@ class HyperbolicTangent:
 		self.function = numpy.vectorize(lambda x: math.tanh(x))
 		self.derivative = numpy.vectorize(lambda x: 1.0 - x * x)
 		self.hadamard = numpy.vectorize(lambda x, y: x * y)
-
-	def cleardeltas(self):
-		pass
-
-	def updateweights(self):
-		pass
 
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
@@ -85,12 +73,6 @@ class HardHyperbolicTangent:
 		self.derivative = numpy.vectorize(lambda x: 1.0 if -1.0 < x < 1.0 else 0.0)
 		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
-	def cleardeltas(self):
-		pass
-
-	def updateweights(self):
-		pass
-
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
 		self.previousoutput = self.function(self.previousinput)
@@ -117,12 +99,6 @@ class RectifiedLinearUnit:
 		self.function = numpy.vectorize(lambda x: 0.0 if x < 0.0 else x)
 		self.derivative = numpy.vectorize(lambda x: 0.0 if x < 0.0 else 1.0)
 		self.hadamard = numpy.vectorize(lambda x, y: x * y)
-
-	def cleardeltas(self):
-		pass
-
-	def updateweights(self):
-		pass
 
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
@@ -154,12 +130,6 @@ class ParametricRectifiedLinearUnit:
 		self.derivative = numpy.vectorize(lambda x: self.parameter if x < 0.0 else 1.0)
 		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
-	def cleardeltas(self):
-		pass
-
-	def updateweights(self):
-		pass
-
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
 		self.previousoutput = self.function(self.previousinput)
@@ -189,12 +159,6 @@ class HardShrink:
 		self.function = numpy.vectorize(lambda x: 0.0 if -self.parameter < x < self.parameter else x)
 		self.derivative = numpy.vectorize(lambda x: 0.0 if -self.parameter < x < self.parameter else 1.0)
 		self.hadamard = numpy.vectorize(lambda x, y: x * y)
-
-	def cleardeltas(self):
-		pass
-
-	def updateweights(self):
-		pass
 
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
@@ -226,12 +190,6 @@ class SoftShrink:
 		self.derivative = numpy.vectorize(lambda x: 0.0 if -self.parameter < x < self.parameter else 1.0)
 		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
-	def cleardeltas(self):
-		pass
-
-	def updateweights(self):
-		pass
-
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
 		self.previousoutput = self.function(self.previousinput)
@@ -256,12 +214,6 @@ class SoftMax:
 		self.outputs = self.inputs
 		self.exponential = numpy.vectorize(lambda x: math.exp(x))
 		self.hadamard = numpy.vectorize(lambda x, y: x * y)
-
-	def cleardeltas(self):
-		pass
-
-	def updateweights(self):
-		pass
 
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
@@ -300,12 +252,6 @@ class SoftPlus:
 		self.exponential = numpy.vectorize(lambda x: 1.0 + math.exp(self.parameter * x))
 		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
-	def cleardeltas(self):
-		pass
-
-	def updateweights(self):
-		pass
-
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
 		self.previoushidden = self.exponential(self.previousinput)
@@ -314,3 +260,31 @@ class SoftPlus:
 
 	def backpropagate(self, outputvector):
 		return self.hadamard(outputvector, self.derivative(self.previoushidden))
+
+class ShiftScale:
+
+	inputs = None
+	outputs = None
+
+	previousinput = None
+	previousoutput = None
+
+	scale = None
+	shift = None
+
+	function = None
+
+	def __init__(self, inputs, scale = None, shift = None):
+		self.inputs = inputs
+		self.outputs = self.inputs
+		self.scale = scale if scale is not None else 1.0
+		self.shift = shift if shift is not None else 0.0
+		self.function = numpy.vectorize(lambda x: self.scale * x + self.shift)
+
+	def feedforward(self, inputvector):
+		self.previousinput = inputvector
+		self.previousoutput = self.function(self.previousinput)
+		return self.previousoutput
+
+	def backpropagate(self, outputvector):
+		return numpy.multiply(self.scale, outputvector)

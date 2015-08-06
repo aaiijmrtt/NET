@@ -15,12 +15,6 @@ class MeanSquared:
 		self.outputs = self.inputs
 		self.derivative = numpy.vectorize(lambda x, y: x - y)
 
-	def cleardeltas(self):
-		pass
-
-	def updateweights(self):
-		pass
-
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
 		self.previousoutput = inputvector
