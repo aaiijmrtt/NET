@@ -26,11 +26,11 @@ class Linear:
 		self.outputs = outputs
 		self.weights = numpy.random.normal(0.0, 1.0, (self.outputs, self.inputs))
 		self.biases = numpy.random.normal(0.0, 1.0, (self.outputs, 1))
-		self.cleardeltas()
 		self.alpha = alpha if alpha is not None else 0.05 # default set at 0.05
 		self.velocity = None
 		self.regularization = None
 		self.dropout = None
+		self.cleardeltas()
 
 	def cleardeltas(self):
 		if self.regularization is not None:
@@ -215,3 +215,23 @@ class MergeProduct:
 		for i in range(self.inputs):
 			deltas[i][0] *= self.previousoutput[i % self.outputs][0] / self.previousinput[i][0]
 		return deltas
+
+class Step:
+
+	inputs = None
+	outputs = None
+
+	previousinput = None
+	previousoutput = None
+
+	def __init__(self, inputs):
+		self.inputs = inputs
+		self.outputs = self.inputs
+
+	def feedforward(self, inputvector):
+		self.previousinput = inputvector
+		self.previousoutput = self.previousinput
+		return self.previousoutput
+
+	def backpropagate(self, outputvector):
+		return outputvector

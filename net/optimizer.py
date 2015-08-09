@@ -17,6 +17,7 @@ class Optimizer:
 		self.criterion = numpy.vectorize(criterion)
 
 	def train(self, iterations = 1):
+		self.net.timingsetup()
 		self.net.trainingsetup()
 		for i in range(iterations):
 			for inputvector, outputvector in self.trainingset:
@@ -25,6 +26,7 @@ class Optimizer:
 				self.net.updateweights()
 
 	def test(self, iterations = 1):
+		self.net.timingsetup()
 		self.net.testingsetup()
 		self.error = numpy.zeros((self.net.outputs, 1), dtype = float)
 		for i in range(iterations):
