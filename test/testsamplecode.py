@@ -1,56 +1,55 @@
 import sys, os
 sys.path.append(os.path.abspath('..'))
 
-# Input -> Linear -> HyperbolicTangent -> Linear -> MeanSquared (Error) -> Output
+import net, numpy, unittest
 
-import net
+class SampleCodeTestCase(unittest.TestCase):
 
-n_input = 2
-n_hidden = 6
-n_output = 1
+	def testsamplecode(self):
 
-myseriesnet = net.Series()
+		n_input = 2
+		n_hidden = 6
+		n_output = 1
 
-myseriesnet.addlayer(net.Linear(n_input, n_hidden))
-myseriesnet.addlayer(net.HyperbolicTangent(n_hidden))
-myseriesnet.addlayer(net.Linear(n_hidden, n_output))
-myseriesnet.addlayer(net.MeanSquared(n_output))
+		myseriesnet = net.Series()
 
-myseriesnet.applyvelocity(0.9)
-myseriesnet.applyregularization()
+		myseriesnet.addlayer(net.Linear(n_input, n_hidden))
+		myseriesnet.addlayer(net.HyperbolicTangent(n_hidden))
+		myseriesnet.addlayer(net.Linear(n_hidden, n_output))
+		myseriesnet.addlayer(net.MeanSquared(n_output))
 
-# f(0, 0) = 0
-# f(0, 1) = 1
-# f(1, 0) = 1
-# f(1, 1) = 0
+		myseriesnet.applyvelocity(0.9)
+		myseriesnet.applyregularization()
 
-import numpy
+		mytrainingset = list()
 
-mytrainingset = list()
+		for i in range(500):
 
-for i in range(500):
+			x = numpy.zeros((n_input, 1), dtype = float)
+			y = numpy.zeros((n_output, 1), dtype = float)
 
-	x = numpy.zeros((n_input, 1), dtype = float)
-	y = numpy.zeros((n_output, 1), dtype = float)
+			if i % 4 == 0:
+				mytrainingset.append((x, y))
+			elif i % 4 == 1:
+				x[1][0] = 1.0
+				y[0][0] = 1.0
+				mytrainingset.append((x, y))
+			elif i % 4 == 2:
+				x[0][0] = 1.0
+				y[0][0] = 1.0
+				mytrainingset.append((x, y))
+			else:
+				x[0][0] = 1.0
+				x[1][0] = 1.0
+				mytrainingset.append((x, y))
 
-	if i % 4 == 0:
-		mytrainingset.append((x, y))
-	elif i % 4 == 1:
-		x[1][0] = 1.0
-		y[0][0] = 1.0
-		mytrainingset.append((x, y))
-	elif i % 4 == 2:
-		x[0][0] = 1.0
-		y[0][0] = 1.0
-		mytrainingset.append((x, y))
-	else:
-		x[0][0] = 1.0
-		x[1][0] = 1.0
-		mytrainingset.append((x, y))
+		mytestingset = mytrainingset
 
-mytestingset = mytrainingset
+		myoptimizer = net.Optimizer(myseriesnet, mytrainingset, mytestingset, lambda x, y: 0.5 * (x - y) ** 2)
+		myoptimizer.train()
 
-myoptimizer = net.Optimizer(myseriesnet, mytrainingset, mytestingset, lambda x, y: 0.5 * (x - y) ** 2)
-myoptimizer.train()
+		self.assertTrue(myoptimizer.test()[0][0] < 0.001, 'unreliable sample code accuracy')
 
-print "error:", myoptimizer.test()
+if __name__ == '__main__':
+	suite = unittest.TestLoader().loadTestsFromTestCase(SampleCodeTestCase)
+	unittest.TextTestRunner(verbosity = 9).run(suite)

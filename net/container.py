@@ -167,8 +167,8 @@ class Recurrent:
 	def __init__(self, hiddens, layer):
 		self.layer = layer
 		self.hiddens = hiddens
-		self.inputs = self.layer.inputs
-		self.outputs = self.layer.outputs
+		self.inputs = self.layer.inputs - self.hiddens
+		self.outputs = self.layer.outputs - self.hiddens
 
 	def cleardeltas(self):
 		if self.layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
