@@ -56,6 +56,16 @@ class Series:
 			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
 				layer.trainingsetup()
 
+	def applylearningrate(self, alpha = None):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+				layer.applylearningrate(alpha)
+
+	def applydecayrate(self, eta = None):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+				layer.applydecayrate(eta)
+
 	def applyvelocity(self, gamma = None):
 		for layer in self.layers:
 			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
@@ -136,6 +146,16 @@ class Parallel:
 			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
 				layer.trainingsetup()
 
+	def applylearningrate(self, alpha = None):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+				layer.applylearningrate(alpha)
+
+	def applydecayrate(self, eta = None):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+				layer.applydecayrate(eta)
+
 	def applyvelocity(self, gamma = None):
 		for layer in self.layers:
 			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
@@ -201,6 +221,16 @@ class Recurrent:
 	def testingsetup(self):
 		if self.layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
 			self.layer.trainingsetup()
+
+	def applylearningrate(self, alpha = None):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+				layer.applylearningrate(alpha)
+
+	def applydecayrate(self, eta = None):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+				layer.applydecayrate(eta)
 
 	def applyvelocity(self, gamma = None):
 		if self.layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:

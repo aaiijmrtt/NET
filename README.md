@@ -68,7 +68,7 @@ neural network architectures quick.
 
 3. **Training and Testing the Network**:
 
-		myoptimizer = net.Optimizer(myseriesnet, mytrainingset, mytestingset, lambda x, y: 0.5 * (x - y) ** 2)
+		myoptimizer = net.Optimizer(myseriesnet, mytrainingset, mytestingset)
 		myoptimizer.train()
 
 		print "error:", myoptimizer.test()

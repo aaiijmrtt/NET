@@ -45,7 +45,7 @@ class SampleCodeTestCase(unittest.TestCase):
 
 		mytestingset = mytrainingset
 
-		myoptimizer = net.Optimizer(myseriesnet, mytrainingset, mytestingset, lambda x, y: 0.5 * (x - y) ** 2)
+		myoptimizer = net.Optimizer(myseriesnet, mytrainingset, mytestingset)
 		myoptimizer.train()
 
 		self.assertTrue(myoptimizer.test()[0][0] < 0.001, 'unreliable sample code accuracy')

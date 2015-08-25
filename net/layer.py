@@ -4,12 +4,14 @@ class Linear:
 
 	inputs = None
 	outputs = None
+	updates = None
 
 	weights = None
 	biases = None
 
 	alpha = None
-	gamma = None
+	eta = None
+	learningrate = None
 
 	deltaweights = None
 	deltabiases = None
@@ -21,12 +23,14 @@ class Linear:
 	previousinput = None
 	previousoutput = None
 
-	def __init__(self, inputs, outputs, alpha = None, gamma = None):
+	def __init__(self, inputs, outputs, alpha = None, eta = None):
 		self.inputs = inputs
 		self.outputs = outputs
 		self.weights = numpy.random.normal(0.0, 1.0, (self.outputs, self.inputs))
 		self.biases = numpy.random.normal(0.0, 1.0, (self.outputs, 1))
-		self.alpha = alpha if alpha is not None else 0.05 # default set at 0.05
+		self.applylearningrate(alpha)
+		self.applydecayrate(eta)
+		self.updates = 0
 		self.velocity = None
 		self.regularization = None
 		self.dropout = None
@@ -43,11 +47,12 @@ class Linear:
 		if self.velocity is not None:
 			self.deltaweights, self.deltabiases = self.velocity.updateweights()
 		else:
-			self.deltaweights = numpy.multiply(self.alpha, self.deltaweights)
-			self.deltabiases = numpy.multiply(self.alpha, self.deltabiases)
+			self.deltaweights = numpy.multiply(self.alpha / (1.0 + self.updates * self.eta), self.deltaweights)
+			self.deltabiases = numpy.multiply(self.alpha / (1.0 + self.updates * self.eta), self.deltabiases)
 		self.weights = numpy.subtract(self.weights, self.deltaweights)
 		self.biases = numpy.subtract(self.biases, self.deltabiases)
 		self.cleardeltas()
+		self.updates += 1
 
 	def feedforward(self, inputvector):
 		if self.dropout is not None:
@@ -63,6 +68,7 @@ class Linear:
 		return numpy.dot(self.weights.transpose(), outputvector)
 
 	def trainingsetup(self):
+		self.updates = 0
 		if self.velocity is not None:
 			self.velocity.velocityweights = numpy.zeros(self.weights.shape, dtype = float)
 			self.velocity.velocitybiases = numpy.zeros(self.biases.shape, dtype = float)
@@ -76,14 +82,20 @@ class Linear:
 		if self.dropout is not None:
 			self.dropout.dropout = False
 
+	def applylearningrate(self, alpha = None):
+		self.alpha = alpha if alpha is not None else 0.05 # default set at 0.05
+
+	def applydecayrate(self, eta = None):
+		self.eta = eta if eta is not None else 0.0 # default set at 0.0
+
 	def applyvelocity(self, gamma = None):
 		self.velocity = Velocity(self, gamma)
 
 	def applyregularization(self, lamda = None, regularizer = None):
-		self.regularizer = Regularization(self, lamda)
+		self.regularizer = Regularization(self, lamda, regularizer)
 
-	def applydropout(self, probability = None):
-		self.dropout = Dropout(self, probability)
+	def applydropout(self, rho = None):
+		self.dropout = Dropout(self, rho)
 
 class Velocity:
 
@@ -100,8 +112,8 @@ class Velocity:
 		self.gamma = gamma if gamma is not None else 0.5 # default set at 0.5
 
 	def updateweights(self):
-		self.velocityweights = numpy.add(numpy.multiply(self.gamma, self.velocityweights), numpy.multiply(self.linear.alpha, self.linear.deltaweights))
-		self.velocitybiases = numpy.add(numpy.multiply(self.gamma, self.velocitybiases), numpy.multiply(self.linear.alpha, self.linear.deltabiases))
+		self.velocityweights = numpy.add(numpy.multiply(self.gamma, self.velocityweights), numpy.multiply(self.linear.alpha / (1.0 + self.linear.updates * self.linear.eta), self.linear.deltaweights))
+		self.velocitybiases = numpy.add(numpy.multiply(self.gamma, self.velocitybiases), numpy.multiply(self.linear.alpha / (1.0 + self.linear.updates * self.linear.eta), self.linear.deltabiases))
 		return self.velocityweights, self.velocitybiases
 
 class Regularization:
@@ -122,20 +134,20 @@ class Dropout:
 
 	linear = None
 	dropout = None
-	probability = None
+	rho = None
 	hadamard = None
 
-	def __init__(self, linear, probability = None):
+	def __init__(self, linear, rho = None):
 		self.linear = linear
-		self.probability = probability if probability is not None else 0.75 # default set at 0.75
+		self.rho = rho if rho is not None else 0.75 # default set at 0.75
 		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 		self.dropout = True
 
 	def feedforward(self, inputvector):
 		if self.dropout:
-			return self.hadamard(numpy.random.binomial(1, self.probability, (self.linear.inputs, 1)), inputvector)
+			return self.hadamard(numpy.random.binomial(1, self.rho, (self.linear.inputs, 1)), inputvector)
 		else:
-			return numpy.multiply(self.probability, inputvector)
+			return numpy.multiply(self.rho, inputvector)
 
 class Split:
 

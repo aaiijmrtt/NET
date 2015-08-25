@@ -102,6 +102,8 @@ datamembers.
 
 	* **Optimizer**: simplifies training and testing
 
+	* **Hyperoptimizer**: optimizes hyperparameters
+
 **Note**:
 
 * x(i) indexing is used to denote the i-th component of a vector x.

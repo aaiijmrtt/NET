@@ -20,7 +20,7 @@ class DimensionsTestCase(unittest.TestCase):
 				self.assertEqual(singleparameter.backpropagate(numpy.random.rand(singleparameter.outputs, 1)).shape, (singleparameter.inputs, 1), 'backpropagate dimensions error in class %s' %singleparameterclass)
 				singleparameter = None
 
-	def testdoubleparameterclass(self):
+	def testdoubleparameterclasses(self):
 		for doubleparameterclass in self.doubleparameterclasses:
 			for i in range(1, 35):
 				for j in range(1, 35):
