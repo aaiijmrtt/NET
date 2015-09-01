@@ -55,6 +55,7 @@ class Hyperoptimizer:
 		self.optimizer = optimizer
 		self.criterion = criterion if criterion is not None else lambda x: numpy.sum(x) / numpy.product(x.shape) # default set to average
 
+#	hyperparameters = [('applyvelocity', [.3, .5]), ('applylearningrate', [.025, .05])]
 	def gridsearch(self, hyperparameters, batch = 1, iterations = 1):
 		backupnet = copy.deepcopy(self.optimizer.net)
 		indices = [0 for i in range(len(hyperparameters))]
@@ -62,6 +63,7 @@ class Hyperoptimizer:
 		limits = [len(hyperparameters[i][1]) for i in range(len(hyperparameters))]
 		besterror = float('inf')
 		bestnet = backupnet
+
 		while not(indices[len(hyperparameters) - 1] == limits[len(hyperparameters) - 1]):
 			for i in range(len(hyperparameters)):
 				getattr(self.optimizer.net, hyperparameters[i][0])(hyperparameters[i][1][indices[i]])
@@ -71,6 +73,7 @@ class Hyperoptimizer:
 				besterror = error
 				bestindices = copy.deepcopy(indices)
 				bestnet = copy.deepcopy(self.optimizer.net)
+
 			indices[0] += 1
 			for i in range(len(indices) - 1):
 				if indices[i] == limits[i]:
@@ -79,5 +82,91 @@ class Hyperoptimizer:
 				else:
 					break
 			self.optimizer.net = copy.deepcopy(backupnet)
+
 		self.optimizer.net = copy.deepcopy(bestnet)
 		return [hyperparameters[i][1][bestindices[i]] for i in range(len(hyperparameters))]
+
+#	hyperparameters = [('applyvelocity', 'applylearningrate'), [.5, .025], [.3, .05], [.5, .025]]
+	def NelderMead(self, hyperparameters, batch = 1, iterations = 1, alpha = 1.0, gamma = 2.0, rho = 0.5, sigma = 0.5, threshold = 0.05, hyperiterations = 10): # defaults set
+
+		def geterror(self, dimensions, hyperparameters, point, batch, iterations):
+			for i in range(dimensions):
+				getattr(self.optimizer.net, hyperparameters[0][i])(point[i])
+			self.optimizer.train(batch, iterations)
+			return self.criterion(self.optimizer.validate())
+
+		backupnet = copy.deepcopy(self.optimizer.net)
+		dimensions = len(hyperparameters[0])
+		simplex = [numpy.reshape(hyperparameters[i], (dimensions)) for i in range(1, len(hyperparameters))]
+		costs = list()
+		besterror = float('inf')
+		bestnet = backupnet
+
+		for point in simplex:
+			error = geterror(self, dimensions, hyperparameters, point, batch, iterations)
+			if error < besterror:
+				besterror = error
+				bestnet = copy.deepcopy(self.optimizer.net)
+			costs.append(error)
+			self.optimizer.net = copy.deepcopy(backupnet)
+
+		for iteration in range(hyperiterations):
+			costs, simplex = zip(*sorted(zip(costs, simplex)))
+			costs, simplex = list(costs), list(simplex)
+
+			centroid = numpy.divide(numpy.sum(simplex, axis = 0), dimensions)
+			if max(numpy.linalg.norm(numpy.subtract(centroid, point)) for point in simplex) < threshold:
+				break
+
+			reflectedpoint = numpy.add(centroid, numpy.multiply(alpha, numpy.subtract(centroid, simplex[-1])))
+			reflectederror = geterror(self, dimensions, hyperparameters, reflectedpoint, batch, iterations)
+			if reflectederror < besterror:
+				besterror = reflectederror
+				bestnet = copy.deepcopy(self.optimizer.net)
+			self.optimizer.net = copy.deepcopy(backupnet)
+
+			if costs[0] <= reflectederror < costs[-2]:
+				simplex[-1] = reflectedpoint
+				costs[-1] = reflectederror
+
+			elif reflectederror < costs[0]:
+				expandedpoint = numpy.add(centroid, numpy.multiply(gamma, numpy.subtract(centroid, simplex[-1])))
+				expandederror = geterror(self, dimensions, hyperparameters, expandedpoint, batch, iterations)
+				if expandederror < besterror:
+					besterror = expandederror
+					bestnet = copy.deepcopy(self.optimizer.net)
+
+				if expandederror < reflectederror:
+					simplex[-1] = expandedpoint
+					costs[-1] = expandederror
+				else:
+					simplex[-1] = reflectedpoint
+					costs[-1] = reflectederror
+				self.optimizer.net = copy.deepcopy(backupnet)
+
+			else:
+				if reflectederror < costs[-1]:
+					contractedpoint = numpy.add(centroid, numpy.multiply(rho, numpy.subtract(centroid, simplex[-1])))
+				else:
+					contractedpoint = numpy.add(centroid, numpy.multiply(rho, numpy.subtract(simplex[-1], centroid)))
+				contractederror = geterror(self, dimensions, hyperparameters, contractedpoint, batch, iterations)
+
+				if contractederror < besterror:
+					besterror = contractederror
+					bestnet = copy.deepcopy(self.optimizer.net)
+				self.optimizer.net = copy.deepcopy(backupnet)
+
+				if contractederror < costs[-1]:
+					simplex[-1] = contractedpoint
+					costs[-1] = contractederror
+				else:
+					for i in range(1, len(simplex)):
+						simplex[i] = numpy.add(simplex[0], numpy.multiply(sigma, numpy.subtract(simplex[i], simplex[0])))
+						costs[i] = geterror(self, dimensions, hyperparameters, simplex[i], batch, iterations)
+						if costs[i] < besterror:
+							besterror = costs[i]
+							bestnet = copy.deepcopy(self.optimizer.net)
+						self.optimizer.net = copy.deepcopy(backupnet)
+
+		self.optimizer.net = copy.deepcopy(bestnet)
+		return [(costs[i], simplex[i].tolist()) for i in range(len(simplex))]

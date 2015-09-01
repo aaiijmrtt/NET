@@ -1,4 +1,4 @@
-import numpy, math
+import numpy
 
 class Sigmoid:
 
@@ -15,7 +15,7 @@ class Sigmoid:
 	def __init__(self, inputs):
 		self.inputs = inputs
 		self.outputs = self.inputs
-		self.function = numpy.vectorize(lambda x: 1.0 / (1.0 + math.exp(-x)))
+		self.function = numpy.vectorize(lambda x: 1.0 / (1.0 + numpy.exp(-x)))
 		self.derivative = numpy.vectorize(lambda x: x * (1.0 - x))
 		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
@@ -42,7 +42,7 @@ class HyperbolicTangent:
 	def __init__(self, inputs):
 		self.inputs = inputs
 		self.outputs = self.inputs
-		self.function = numpy.vectorize(lambda x: math.tanh(x))
+		self.function = numpy.tanh
 		self.derivative = numpy.vectorize(lambda x: 1.0 - x * x)
 		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
@@ -212,7 +212,7 @@ class SoftMax:
 	def __init__(self, inputs, parameter = None):
 		self.inputs = inputs
 		self.outputs = self.inputs
-		self.exponential = numpy.vectorize(lambda x: math.exp(x))
+		self.exponential = numpy.exp
 		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
 	def feedforward(self, inputvector):
@@ -247,9 +247,9 @@ class SoftPlus:
 		self.inputs = inputs
 		self.outputs = self.inputs
 		self.parameter = parameter if parameter is not None else 1.0 # default set at 1.0
-		self.function = numpy.vectorize(lambda x: 1.0 / self.parameter * math.log(x))
+		self.function = numpy.vectorize(lambda x: 1.0 / self.parameter * numpy.log(x))
 		self.derivative = numpy.vectorize(lambda x: 1.0 - 1.0 / x)
-		self.exponential = numpy.vectorize(lambda x: 1.0 + math.exp(self.parameter * x))
+		self.exponential = numpy.vectorize(lambda x: 1.0 + numpy.exp(self.parameter * x))
 		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
 	def feedforward(self, inputvector):
