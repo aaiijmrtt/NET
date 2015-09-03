@@ -1,9 +1,9 @@
 #Classes
 
-Each class (except Optimizer) has feedforward and backpropagate methods, which
-return the forwardfed output and the backpropagated delta vector, respectively.
-Each object (except for Optimizer objects) has previousinput and previousoutput
-datamembers.
+Each class (except Optimizers and Layer Modifiers) has feedforward and
+backpropagate methods, which return the forwardfed output and the
+backpropagated delta vector, respectively. Each object (except for Optimizer
+and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 1. **Layers**:
 
@@ -27,9 +27,13 @@ datamembers.
 
 			f(x) = x
 
-	* **Velocity**: modifier applicable to training of Linear layers
+	* **Normalizer**:
 
-	* **Regularization**: modifier applicable to training of Linear layers
+			f(x)(i) = p1 * (x(i) - m(x(i))) / (v(x(i)) + e) ^ 0.5 + p2
+
+	* **Velocity**: modifier applicable to training of Linear, Normalizer layers
+
+	* **Regularization**: modifier applicable to training of Linear, Normalizer layers
 
 	* **Dropout**: modifier applicable to training of Linear layers
 
@@ -96,13 +100,14 @@ datamembers.
 
 			f([x1, x2 ... xn]) = [f1(x1), f2(x2) ... fn(xn)]
 
-	* **Recurrent**
+	* **Recurrent**: implements time recurrence
 
 5. **Optimizers**:
 
 	* **Optimizer**: simplifies training and testing
 
-	* **Hyperoptimizer**: optimizes hyperparameters
+	* **Hyperoptimizer**: optimizes hyperparameters. Implements grid search and
+Nelder-Meads algorithm.
 
 **Note**:
 

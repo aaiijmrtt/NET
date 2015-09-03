@@ -1,6 +1,6 @@
 import numpy
 
-class MeanSquared:
+class Error:
 
 	inputs = None
 	outputs = None
@@ -10,11 +10,6 @@ class MeanSquared:
 
 	derivative = None
 
-	def __init__(self, inputs):
-		self.inputs = inputs
-		self.outputs = self.inputs
-		self.derivative = numpy.vectorize(lambda x, y: x - y)
-
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
 		self.previousoutput = inputvector
@@ -23,3 +18,10 @@ class MeanSquared:
 	def backpropagate(self, outputvector):
 		self.previousoutput = outputvector
 		return self.derivative(self.previousinput, self.previousoutput)
+		
+class MeanSquared(Error):
+
+	def __init__(self, inputs):
+		self.inputs = inputs
+		self.outputs = self.inputs
+		self.derivative = numpy.vectorize(lambda x, y: x - y)

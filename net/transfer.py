@@ -1,6 +1,6 @@
 import numpy
 
-class Sigmoid:
+class Transfer:
 
 	inputs = None
 	outputs = None
@@ -15,205 +15,81 @@ class Sigmoid:
 	def __init__(self, inputs):
 		self.inputs = inputs
 		self.outputs = self.inputs
+		self.hadamard = numpy.vectorize(lambda x, y: x * y)
+
+	def feedforward(self, inputvector):
+		self.previousinput = inputvector
+		self.previousoutput = self.function(self.previousinput)
+		return self.previousoutput
+
+	def backpropagate(self, outputvector):
+		return self.hadamard(outputvector, self.derivative(self.previousoutput))
+
+class Sigmoid(Transfer):
+
+	def __init__(self, inputs):
+		Transfer.__init__(self, inputs)
 		self.function = numpy.vectorize(lambda x: 1.0 / (1.0 + numpy.exp(-x)))
 		self.derivative = numpy.vectorize(lambda x: x * (1.0 - x))
-		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
-	def feedforward(self, inputvector):
-		self.previousinput = inputvector
-		self.previousoutput = self.function(self.previousinput)
-		return self.previousoutput
-
-	def backpropagate(self, outputvector):
-		return self.hadamard(outputvector, self.derivative(self.previousoutput))
-
-class HyperbolicTangent:
-
-	inputs = None
-	outputs = None
-
-	previousinput = None
-	previousoutput = None
-
-	function = None
-	derivative = None
-	hadamard = None
+class HyperbolicTangent(Transfer):
 
 	def __init__(self, inputs):
-		self.inputs = inputs
-		self.outputs = self.inputs
+		Transfer.__init__(self, inputs)
 		self.function = numpy.tanh
 		self.derivative = numpy.vectorize(lambda x: 1.0 - x * x)
-		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
-	def feedforward(self, inputvector):
-		self.previousinput = inputvector
-		self.previousoutput = self.function(self.previousinput)
-		return self.previousoutput
-
-	def backpropagate(self, outputvector):
-		return self.hadamard(outputvector, self.derivative(self.previousoutput))
-
-class HardHyperbolicTangent:
-
-	inputs = None
-	outputs = None
-
-	previousinput = None
-	previousoutput = None
-
-	function = None
-	derivative = None
-	hadamard = None
+class HardHyperbolicTangent(Transfer):
 
 	def __init__(self, inputs):
-		self.inputs = inputs
-		self.outputs = self.inputs
+		Transfer.__init__(self, inputs)
 		self.function = numpy.vectorize(lambda x: 1.0 if x > 1.0 else -1.0 if x < -1.0 else x)
 		self.derivative = numpy.vectorize(lambda x: 1.0 if -1.0 < x < 1.0 else 0.0)
-		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
-	def feedforward(self, inputvector):
-		self.previousinput = inputvector
-		self.previousoutput = self.function(self.previousinput)
-		return self.previousoutput
-
-	def backpropagate(self, outputvector):
-		return self.hadamard(outputvector, self.derivative(self.previousinput))
-
-class RectifiedLinearUnit:
-
-	inputs = None
-	outputs = None
-
-	previousinput = None
-	previousoutput = None
-
-	function = None
-	derivative = None
-	hadamard = None
+class RectifiedLinearUnit(Transfer):
 
 	def __init__(self, inputs):
-		self.inputs = inputs
-		self.outputs = self.inputs
+		Transfer.__init__(self, inputs)
 		self.function = numpy.vectorize(lambda x: 0.0 if x < 0.0 else x)
 		self.derivative = numpy.vectorize(lambda x: 0.0 if x < 0.0 else 1.0)
-		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
-	def feedforward(self, inputvector):
-		self.previousinput = inputvector
-		self.previousoutput = self.function(self.previousinput)
-		return self.previousoutput
-
-	def backpropagate(self, outputvector):
-		return self.hadamard(outputvector, self.derivative(self.previousinput))
-
-class ParametricRectifiedLinearUnit:
-
-	inputs = None
-	outputs = None
-
-	previousinput = None
-	previousoutput = None
+class ParametricRectifiedLinearUnit(Transfer):
 
 	parameter = None
 
-	function = None
-	derivative = None
-	hadamard = None
-
 	def __init__(self, inputs, parameter = None):
-		self.inputs = inputs
-		self.outputs = self.inputs
+		Transfer.__init__(self, inputs)
 		self.parameter = parameter if parameter is not None else 0.01 # default set at 0.01
 		self.function = numpy.vectorize(lambda x: self.parameter * x if x < 0.0 else x)
 		self.derivative = numpy.vectorize(lambda x: self.parameter if x < 0.0 else 1.0)
-		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
-	def feedforward(self, inputvector):
-		self.previousinput = inputvector
-		self.previousoutput = self.function(self.previousinput)
-		return self.previousoutput
-
-	def backpropagate(self, outputvector):
-		return self.hadamard(outputvector, self.derivative(self.previousinput))
-
-class HardShrink:
-
-	inputs = None
-	outputs = None
-
-	previousinput = None
-	previousoutput = None
+class HardShrink(Transfer):
 
 	parameter = None
 
-	function = None
-	derivative = None
-	hadamard = None
-
 	def __init__(self, inputs, parameter = None):
-		self.inputs = inputs
-		self.outputs = self.inputs
+		Transfer.__init__(self, inputs)
 		self.parameter = parameter if parameter is not None else 1.0 # default set at 1.0
 		self.function = numpy.vectorize(lambda x: 0.0 if -self.parameter < x < self.parameter else x)
 		self.derivative = numpy.vectorize(lambda x: 0.0 if -self.parameter < x < self.parameter else 1.0)
-		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
-	def feedforward(self, inputvector):
-		self.previousinput = inputvector
-		self.previousoutput = self.function(self.previousinput)
-		return self.previousoutput
-
-	def backpropagate(self, outputvector):
-		return self.hadamard(outputvector, self.derivative(self.previousinput))
-
-class SoftShrink:
-
-	inputs = None
-	outputs = None
-
-	previousinput = None
-	previousoutput = None
+class SoftShrink(Transfer):
 
 	parameter = None
 
-	function = None
-	derivative = None
-	hadamard = None
-
 	def __init__(self, inputs, parameter = None):
-		self.inputs = inputs
-		self.outputs = self.inputs
+		Transfer.__init__(self, inputs)
 		self.parameter = parameter if parameter is not None else 1.0 # default set at 1.0
 		self.function = numpy.vectorize(lambda x: x - self.parameter if x > self.parameter else x + self.parameter if x < -self.parameter else 0.0)
 		self.derivative = numpy.vectorize(lambda x: 0.0 if -self.parameter < x < self.parameter else 1.0)
-		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
-	def feedforward(self, inputvector):
-		self.previousinput = inputvector
-		self.previousoutput = self.function(self.previousinput)
-		return self.previousoutput
+class SoftMax(Transfer):
 
-	def backpropagate(self, outputvector):
-		return self.hadamard(outputvector, self.derivative(self.previousinput))
-
-class SoftMax:
-
-	inputs = None
-	outputs = None
-
-	previousinput = None
-	previousoutput = None
-
-	hadamard = None
 	exponential = None
 
 	def __init__(self, inputs, parameter = None):
-		self.inputs = inputs
-		self.outputs = self.inputs
+		Transfer.__init__(self, inputs)
 		self.exponential = numpy.exp
-		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
@@ -227,30 +103,18 @@ class SoftMax:
 		dot = numpy.dot(numpy.dot(self.previousoutput, self.previousoutput.transpose()), outputvector)
 		return numpy.subtract(had, dot)
 
-class SoftPlus:
+class SoftPlus(Transfer):
 
-	inputs = None
-	outputs = None
-
-	previousinput = None
 	previoushidden = None
-	previousoutput = None
-
 	parameter = None
-
-	function = None
-	derivative = None
-	hadamard = None
 	exponential = None
 
 	def __init__(self, inputs, parameter = None):
-		self.inputs = inputs
-		self.outputs = self.inputs
+		Transfer.__init__(self, inputs)
 		self.parameter = parameter if parameter is not None else 1.0 # default set at 1.0
 		self.function = numpy.vectorize(lambda x: 1.0 / self.parameter * numpy.log(x))
 		self.derivative = numpy.vectorize(lambda x: 1.0 - 1.0 / x)
 		self.exponential = numpy.vectorize(lambda x: 1.0 + numpy.exp(self.parameter * x))
-		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
@@ -261,30 +125,14 @@ class SoftPlus:
 	def backpropagate(self, outputvector):
 		return self.hadamard(outputvector, self.derivative(self.previoushidden))
 
-class ShiftScale:
-
-	inputs = None
-	outputs = None
-
-	previousinput = None
-	previousoutput = None
+class ShiftScale(Transfer):
 
 	scale = None
 	shift = None
 
-	function = None
-
 	def __init__(self, inputs, scale = None, shift = None):
-		self.inputs = inputs
-		self.outputs = self.inputs
+		Transfer.__init__(self, inputs)
 		self.scale = scale if scale is not None else 1.0
 		self.shift = shift if shift is not None else 0.0
 		self.function = numpy.vectorize(lambda x: self.scale * x + self.shift)
-
-	def feedforward(self, inputvector):
-		self.previousinput = inputvector
-		self.previousoutput = self.function(self.previousinput)
-		return self.previousoutput
-
-	def backpropagate(self, outputvector):
-		return numpy.multiply(self.scale, outputvector)
+		self.derivative = numpy.vectorize(lambda x: self.scale)
