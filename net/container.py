@@ -19,14 +19,19 @@ class Series:
 		if self.inputs is None:
 			self.inputs = self.layers[-1].inputs
 
+	def accumulate(self, inputvector):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Normalizer', 'Series', 'Parallel', 'Recurrent']:
+				layer.accumulate(inputvector)
+
 	def cleardeltas(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.cleardeltas()
 
 	def updateweights(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.updateweights()
 
 	def feedforward(self, inputvector):
@@ -41,6 +46,16 @@ class Series:
 			outputvector = layer.backpropagate(outputvector)
 		return outputvector
 
+	def normalize(self):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Normalizer', 'Series', 'Parallel', 'Recurrent']:
+				layer.normalize()
+
+	def accumulatingsetup(self):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Normalizer', 'Series', 'Parallel', 'Recurrent']:
+				layer.accumulatingsetup()
+
 	def timingsetup(self):
 		for layer in self.layers:
 			if layer.__class__.__name__ in ['Series', 'Parallel', 'Recurrent']:
@@ -48,32 +63,32 @@ class Series:
 
 	def trainingsetup(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.trainingsetup()
 
 	def testingsetup(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.trainingsetup()
 
 	def applylearningrate(self, alpha = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.applylearningrate(alpha)
 
 	def applydecayrate(self, eta = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.applydecayrate(eta)
 
 	def applyvelocity(self, gamma = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.applyvelocity(gamma)
 
 	def applyregularization(self, lamda = None, regularizer = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.applyregularization(lamda, regularizer)
 
 	def applydropout(self, probability = None):
@@ -107,14 +122,19 @@ class Parallel:
 		self.inputdimensions.append(self.inputdimensions[-1] + self.layers[-1].inputs)
 		self.outputdimensions.append(self.outputdimensions[-1] + self.layers[-1].outputs)
 
+	def accumulate(self, inputvector):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Normalizer', 'Series', 'Parallel', 'Recurrent']:
+				layer.accumulate(inputvector)
+
 	def cleardeltas(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.cleardeltas()
 
 	def updateweights(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.updateweights()
 
 	def feedforward(self, inputvector):
@@ -131,6 +151,16 @@ class Parallel:
 			layerdeltas.append(layer.backpropagate(layeroutput))
 		return numpy.concatenate(layerdeltas)
 
+	def normalize(self):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Normalizer', 'Series', 'Parallel', 'Recurrent']:
+				layer.normalize()
+
+	def accumulatingsetup(self):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Normalizer', 'Series', 'Parallel', 'Recurrent']:
+				layer.accumulatingsetup()
+
 	def timingsetup(self):
 		for layer in self.layers:
 			if layer.__class__.__name__ in ['Series', 'Parallel', 'Recurrent']:
@@ -138,32 +168,32 @@ class Parallel:
 
 	def trainingsetup(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.trainingsetup()
 
 	def testingsetup(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.trainingsetup()
 
 	def applylearningrate(self, alpha = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.applylearningrate(alpha)
 
 	def applydecayrate(self, eta = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.applydecayrate(eta)
 
 	def applyvelocity(self, gamma = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.applyvelocity(gamma)
 
 	def applyregularization(self, lamda = None, regularizer = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.applyregularization(lamda, regularizer)
 
 	def applydropout(self, probability = None):
@@ -190,12 +220,16 @@ class Recurrent:
 		self.inputs = self.layer.inputs - self.hiddens
 		self.outputs = self.layer.outputs - self.hiddens
 
+	def accumulate(self, inputvector):
+		if self.layer.__class__.__name__ in ['Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			self.layer.accumulate(inputvector)
+
 	def cleardeltas(self):
-		if self.layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+		if self.layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 			self.layer.cleardeltas()
 
 	def updateweights(self):
-		if self.layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+		if self.layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 			self.layer.updateweights()
 
 	def feedforward(self, inputvector):
@@ -209,35 +243,41 @@ class Recurrent:
 		deltahidden, deltainput = numpy.split(deltavector, [self.hiddens])
 		return deltainput
 
+	def normalize(self):
+		if self.layer.__class__.__name__ in ['Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			self.layer.normalize()
+
+	def accumulatingsetup(self):
+		if self.layer.__class__.__name__ in ['Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			self.layer.accumulatingsetup()
+
 	def timingsetup(self):
 		self.previoushiddens = numpy.zeros((self.hiddens, 1), dtype = float)
 		if self.layer.__class__.__name__ in ['Series', 'Parallel', 'Recurrent']:
 			self.layer.timingsetup()
 
 	def trainingsetup(self):
-		if self.layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+		if self.layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 			self.layer.trainingsetup()
 
 	def testingsetup(self):
-		if self.layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+		if self.layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 			self.layer.trainingsetup()
 
 	def applylearningrate(self, alpha = None):
-		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
-				layer.applylearningrate(alpha)
+		if self.layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			self.layer.applylearningrate(alpha)
 
 	def applydecayrate(self, eta = None):
-		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
-				layer.applydecayrate(eta)
+		if self.layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			self.layer.applydecayrate(eta)
 
 	def applyvelocity(self, gamma = None):
-		if self.layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+		if self.layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 			self.layer.applyvelocity(gamma)
 
 	def applyregularization(self, lamda = None, regularizer = None):
-		if self.layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+		if self.layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 			self.layer.applyregularization(lamda, regularizer)
 
 	def applydropout(self, probability = None):

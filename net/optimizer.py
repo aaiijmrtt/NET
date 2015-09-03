@@ -1,4 +1,4 @@
-import numpy, copy
+import numpy, copy, operator
 
 class Optimizer:
 
@@ -25,6 +25,10 @@ class Optimizer:
 			for j in range(len(self.trainingset)):
 				if j % batch == 0:
 					self.net.updateweights()
+					self.net.accumulatingsetup()
+					for k in range(j, min(j + batch, len(self.trainingset))):
+						self.net.accumulate(self.trainingset[k][0])
+					self.net.normalize()
 				self.net.feedforward(self.trainingset[j][0])
 				self.net.backpropagate(self.trainingset[j][1])
 
@@ -86,7 +90,7 @@ class Hyperoptimizer:
 		self.optimizer.net = copy.deepcopy(bestnet)
 		return [hyperparameters[i][1][bestindices[i]] for i in range(len(hyperparameters))]
 
-#	hyperparameters = [('applyvelocity', 'applylearningrate'), [.5, .025], [.3, .05], [.5, .025]]
+#	hyperparameters = [('applyvelocity', 'applylearningrate'), [.5, .025], [.3, .05], [.1, .025]]
 	def NelderMead(self, hyperparameters, batch = 1, iterations = 1, alpha = 1.0, gamma = 2.0, rho = 0.5, sigma = 0.5, threshold = 0.05, hyperiterations = 10): # defaults set
 
 		def geterror(self, dimensions, hyperparameters, point, batch, iterations):
@@ -100,7 +104,7 @@ class Hyperoptimizer:
 		simplex = [numpy.reshape(hyperparameters[i], (dimensions)) for i in range(1, len(hyperparameters))]
 		costs = list()
 		besterror = float('inf')
-		bestnet = backupnet
+		bestnet = copy.deepcopy(self.optimizer.net)
 
 		for point in simplex:
 			error = geterror(self, dimensions, hyperparameters, point, batch, iterations)
@@ -111,7 +115,7 @@ class Hyperoptimizer:
 			self.optimizer.net = copy.deepcopy(backupnet)
 
 		for iteration in range(hyperiterations):
-			costs, simplex = zip(*sorted(zip(costs, simplex)))
+			costs, simplex = zip(*sorted(zip(costs, simplex), key = operator.itemgetter(0)))
 			costs, simplex = list(costs), list(simplex)
 
 			centroid = numpy.divide(numpy.sum(simplex, axis = 0), dimensions)
@@ -169,4 +173,4 @@ class Hyperoptimizer:
 						self.optimizer.net = copy.deepcopy(backupnet)
 
 		self.optimizer.net = copy.deepcopy(bestnet)
-		return [(costs[i], simplex[i].tolist()) for i in range(len(simplex))]
+		return [(cost, point.tolist()) for cost, point in zip(costs, simplex)]

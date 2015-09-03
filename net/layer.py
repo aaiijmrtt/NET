@@ -11,7 +11,6 @@ class Linear:
 
 	alpha = None
 	eta = None
-	learningrate = None
 
 	deltaweights = None
 	deltabiases = None
@@ -40,8 +39,8 @@ class Linear:
 		if self.regularization is not None:
 			self.deltaweights, self.deltabiases = self.regularization.cleardeltas()
 		else:
-			self.deltaweights = numpy.zeros((self.outputs, self.inputs), dtype = float)
-			self.deltabiases = numpy.zeros((self.outputs, 1), dtype = float)
+			self.deltaweights = numpy.zeros(self.weights.shape, dtype = float)
+			self.deltabiases = numpy.zeros(self.biases.shape, dtype = float)
 
 	def updateweights(self):
 		if self.velocity is not None:
@@ -99,36 +98,36 @@ class Linear:
 
 class Velocity:
 
-	linear = None
+	layer = None
 	gamma = None
 
 	velocityweights = None
 	velocitybiases = None
 
-	def __init__(self, linear, gamma = None):
-		self.linear = linear
-		self.velocityweights = numpy.zeros(self.linear.weights.shape, dtype = float)
-		self.velocitybiases = numpy.zeros(self.linear.biases.shape, dtype = float)
+	def __init__(self, layer, gamma = None):
+		self.layer = layer
+		self.velocityweights = numpy.zeros(self.layer.weights.shape, dtype = float)
+		self.velocitybiases = numpy.zeros(self.layer.biases.shape, dtype = float)
 		self.gamma = gamma if gamma is not None else 0.5 # default set at 0.5
 
 	def updateweights(self):
-		self.velocityweights = numpy.add(numpy.multiply(self.gamma, self.velocityweights), numpy.multiply(self.linear.alpha / (1.0 + self.linear.updates * self.linear.eta), self.linear.deltaweights))
-		self.velocitybiases = numpy.add(numpy.multiply(self.gamma, self.velocitybiases), numpy.multiply(self.linear.alpha / (1.0 + self.linear.updates * self.linear.eta), self.linear.deltabiases))
+		self.velocityweights = numpy.add(numpy.multiply(self.gamma, self.velocityweights), numpy.multiply(self.layer.alpha / (1.0 + self.layer.updates * self.layer.eta), self.layer.deltaweights))
+		self.velocitybiases = numpy.add(numpy.multiply(self.gamma, self.velocitybiases), numpy.multiply(self.layer.alpha / (1.0 + self.layer.updates * self.layer.eta), self.layer.deltabiases))
 		return self.velocityweights, self.velocitybiases
 
 class Regularization:
 
-	linear = None
+	layer = None
 	lamda = None
 	regularizer = None
 
-	def __init__(self, linear, lamda = None, regularizer = None):
-		self.linear = linear
+	def __init__(self, layer, lamda = None, regularizer = None):
+		self.layer = layer
 		self.lamda = lamda if lamda is not None else 0.05 # default set at 0.05
 		self.regularizer = regularizer if regularizer is not None else numpy.vectorize(lambda x: x) # default set to L2 regularization
 
 	def cleardeltas(self):
-		return numpy.multiply(self.lamda, self.regularizer(self.linear.weights)), numpy.multiply(self.lamda, self.regularizer(self.linear.biases))
+		return numpy.multiply(self.lamda, self.regularizer(self.layer.weights)), numpy.multiply(self.lamda, self.regularizer(self.layer.biases))
 
 class Dropout:
 
@@ -145,7 +144,7 @@ class Dropout:
 
 	def feedforward(self, inputvector):
 		if self.dropout:
-			return self.hadamard(numpy.random.binomial(1, self.rho, (self.linear.inputs, 1)), inputvector)
+			return self.hadamard(numpy.random.binomial(1, self.rho, inputvector.shape), inputvector)
 		else:
 			return numpy.multiply(self.rho, inputvector)
 
@@ -247,3 +246,117 @@ class Step:
 
 	def backpropagate(self, outputvector):
 		return outputvector
+
+class Normalizer:
+
+	inputs = None
+	outputs = None
+	updates = None
+	batch = None
+
+	weights = None
+	biases = None
+
+	linearsum = None
+	quadraticsum = None
+	mean = None
+	variance = None
+
+	epsilon = None
+	alpha = None
+	eta = None
+
+	deltaweights = None
+	deltabiases = None
+
+	velocity = None
+	regularization = None
+
+	previousinput = None
+	previousnormalized = None
+	previousoutput = None
+
+	hadamard = None
+
+	def __init__(self, inputs, alpha = None, eta = None, epsilon = None):
+		self.inputs = inputs
+		self.outputs = self.inputs
+		self.weights = numpy.ones((self.inputs, 1), dtype = float)
+		self.biases = numpy.zeros((self.inputs, 1), dtype = float)
+		self.mean = numpy.zeros((self.inputs, 1), dtype = float)
+		self.variance = numpy.ones((self.inputs, 1), dtype = float)
+		self.applylearningrate(alpha)
+		self.applydecayrate(eta)
+		self.epsilon = epsilon if epsilon is not None else 0.0001
+		self.updates = 0
+		self.batch = 1
+		self.velocity = None
+		self.regularization = None
+		self.hadamard = numpy.vectorize(lambda x, y: x * y)
+		self.cleardeltas()
+
+	def cleardeltas(self):
+		if self.regularization is not None:
+			self.deltaweights, self.deltabiases = self.regularization.cleardeltas()
+		else:
+			self.deltaweights = numpy.zeros(self.weights.shape, dtype = float)
+			self.deltabiases = numpy.zeros(self.biases.shape, dtype = float)
+
+	def updateweights(self):
+		if self.velocity is not None:
+			self.deltaweights, self.deltabiases = self.velocity.updateweights()
+		else:
+			self.deltaweights = numpy.multiply(self.alpha / (1.0 + self.updates * self.eta), self.deltaweights)
+			self.deltabiases = numpy.multiply(self.alpha / (1.0 + self.updates * self.eta), self.deltabiases)
+		self.weights = numpy.subtract(self.weights, self.deltaweights)
+		self.biases = numpy.subtract(self.biases, self.deltabiases)
+		self.cleardeltas()
+		self.updates += 1
+
+	def accumulate(self, inputvector):
+		self.linearsum = numpy.add(self.linearsum, inputvector)
+		self.quadraticsum = numpy.add(self.quadraticsum, numpy.square(inputvector))
+		self.batch += 1
+
+	def feedforward(self, inputvector):
+		self.previousinput = inputvector
+		self.previousnormalized = numpy.divide(numpy.subtract(self.previousinput, self.mean), numpy.sqrt(numpy.add(self.epsilon, self.variance)))
+		self.previousoutput = numpy.add(self.hadamard(self.weights, self.previousnormalized), self.biases)
+		return self.previousoutput
+
+	def backpropagate(self, outputvector):
+		self.deltaweights = numpy.add(self.deltaweights, self.hadamard(outputvector, self.previousnormalized))
+		self.deltabiases = numpy.add(self.deltabiases, outputvector)
+		return numpy.multiply(self.weights / self.batch, numpy.divide(numpy.subtract(self.batch - 1, numpy.square(self.previousnormalized)), numpy.sqrt(numpy.add(self.epsilon, self.variance))))
+
+	def normalize(self):
+		self.mean = numpy.divide(self.linearsum, self.batch)
+		self.variance = numpy.subtract(numpy.divide(self.quadraticsum, self.batch), numpy.square(self.mean))
+
+	def accumulatingsetup(self):
+		self.batch = 0
+		self.linearsum = numpy.zeros((self.inputs, 1), dtype = float)
+		self.quadraticsum = numpy.zeros((self.inputs, 1), dtype = float)
+
+	def trainingsetup(self):
+		self.updates = 0
+		if self.velocity is not None:
+			self.velocity.velocityweights = numpy.zeros(self.weights.shape, dtype = float)
+			self.velocity.velocitybiases = numpy.zeros(self.biases.shape, dtype = float)
+
+	def testingsetup(self):
+		if self.velocity is not None:
+			self.velocity.velocityweights = None
+			self.velocity.velocitybiases = None
+
+	def applylearningrate(self, alpha = None):
+		self.alpha = alpha if alpha is not None else 0.05 # default set at 0.05
+
+	def applydecayrate(self, eta = None):
+		self.eta = eta if eta is not None else 0.0 # default set at 0.0
+
+	def applyvelocity(self, gamma = None):
+		self.velocity = Velocity(self, gamma)
+
+	def applyregularization(self, lamda = None, regularizer = None):
+		self.regularizer = Regularization(self, lamda, regularizer)
