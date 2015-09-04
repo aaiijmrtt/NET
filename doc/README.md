@@ -80,6 +80,10 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			f(x)(i) = 1 / p * log(1 + exp(p * x(i)))
 
+	* **SoftSign**:
+
+			f(x)(i) = 1 / (1 + |x(i)|)
+
 	* **SoftMax**:
 
 			f(x)(i) = exp(x(i)) / sum_over_j(exp(x(j)))
@@ -89,6 +93,20 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 	* **MeanSquared**:
 
 			f(y, o)(i) = 1 / 2 * (y(i) - o(i)) ^ 2
+
+	* **CrossEntropy**:
+
+			f(y, o)(i) = - (o(i) * log(y(i)) + (1 - o(i)) * log(1 - y(i)))
+
+	* **NegativeLogLikelihood**:
+
+			f(y, o)(i) = - (o(i) * log(y(i)))
+
+	* **CrossSigmoid**: composition of Sigmoid Transfer Function and
+CrossEntropy Error Function
+
+	* **LogSoftMax**: composition of SoftMax Transfer Function and
+NegativeLogLikelihood Error Function
 
 4. **Containers**:
 

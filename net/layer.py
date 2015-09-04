@@ -25,8 +25,8 @@ class Linear:
 	def __init__(self, inputs, outputs, alpha = None, eta = None):
 		self.inputs = inputs
 		self.outputs = outputs
-		self.weights = numpy.random.normal(0.0, 1.0, (self.outputs, self.inputs))
-		self.biases = numpy.random.normal(0.0, 1.0, (self.outputs, 1))
+		self.weights = numpy.random.normal(0.0, 1.0 / numpy.sqrt(self.inputs), (self.outputs, self.inputs))
+		self.biases = numpy.random.normal(0.0, 1.0 / numpy.sqrt(self.inputs), (self.outputs, 1))
 		self.applylearningrate(alpha)
 		self.applydecayrate(eta)
 		self.updates = 0

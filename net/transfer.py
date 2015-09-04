@@ -85,16 +85,13 @@ class SoftShrink(Transfer):
 
 class SoftMax(Transfer):
 
-	exponential = None
-
 	def __init__(self, inputs, parameter = None):
 		Transfer.__init__(self, inputs)
-		self.exponential = numpy.exp
 
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
 		inputvector = numpy.subtract(inputvector, numpy.amax(inputvector))
-		inputvector = self.exponential(inputvector)
+		inputvector = numpy.exp(inputvector)
 		self.previousoutput = numpy.divide(inputvector, numpy.sum(inputvector))
 		return self.previousoutput
 
@@ -136,3 +133,13 @@ class ShiftScale(Transfer):
 		self.shift = shift if shift is not None else 0.0
 		self.function = numpy.vectorize(lambda x: self.scale * x + self.shift)
 		self.derivative = numpy.vectorize(lambda x: self.scale)
+
+class SoftSign(Transfer):
+
+	def __init__(self, inputs):
+		Transfer.__init__(self, inputs)
+		self.function = numpy.vectorize(lambda x: x / (1.0 + numpy.fabs(x)))
+		self.derivative = numpy.vectorize(lambda x: 1.0 / (1.0 + numpy.fabs(x)) ** 2)
+
+	def backpropagate(self, outputvector):
+		return self.hadamard(outputvector, self.derivative(self.previousinput))

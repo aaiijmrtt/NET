@@ -9,7 +9,7 @@ class DimensionsTestCase(unittest.TestCase):
 	doubleparameterclasses = None
 
 	def setUp(self):
-		self.singleparameterclasses = [net.Step, net.Sigmoid, net.HyperbolicTangent, net.HardHyperbolicTangent, net.RectifiedLinearUnit, net.ParametricRectifiedLinearUnit, net.HardShrink, net.SoftShrink, net.SoftMax, net.SoftPlus, net.ShiftScale, net.MeanSquared]
+		self.singleparameterclasses = [net.Step, net.Sigmoid, net.HyperbolicTangent, net.HardHyperbolicTangent, net.RectifiedLinearUnit, net.ParametricRectifiedLinearUnit, net.HardShrink, net.SoftShrink, net.SoftMax, net.SoftPlus, net.ShiftScale, net.SoftSign, net.MeanSquared, net.CrossEntropy, net.NegativeLogLikelihood, net.CrossSigmoid, net.LogSoftMax]
 		self.doubleparameterclasses = [net.Linear, net.Split, net.MergeSum, net.MergeProduct]
 
 	def testsingleparameterclasses(self):
