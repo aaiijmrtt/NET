@@ -31,7 +31,7 @@ neural network architectures quick.
 		myseriesnet.addlayer(net.MeanSquared(n_output))
 
 		myseriesnet.applyvelocity(0.9)
-		myseriesnet.applyregularization()
+		myseriesnet.applylearningrate(0.025)
 
 2. **Creating a Toy Dataset**:
 

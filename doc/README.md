@@ -11,6 +11,21 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			f(x) = W * x + b
 
+	* **Normalizer**:
+
+			f(x)(i) = p1 * (x(i) - m(x(i))) / (v(x(i)) + e) ^ 0.5 + p2
+
+	* **Modifier**:
+
+		* **Velocity**: implements momentum based gradient descent, accelerates
+learning
+
+		* **Regularization**: implements regularization, prevents overfitting
+
+		* **Dropout**: implements dropout, prevents overfitting
+
+2. **Connectors**:
+
 	* **Split**:
 
 			f(x) = [x, x ... x]
@@ -27,17 +42,7 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			f(x) = x
 
-	* **Normalizer**:
-
-			f(x)(i) = p1 * (x(i) - m(x(i))) / (v(x(i)) + e) ^ 0.5 + p2
-
-	* **Velocity**: modifier applicable to training of Linear, Normalizer layers
-
-	* **Regularization**: modifier applicable to training of Linear, Normalizer layers
-
-	* **Dropout**: modifier applicable to training of Linear layers
-
-2. **Transfer Functions**:
+3. **Transfer Functions**:
 
 	* **ShiftScale**:
 
@@ -88,7 +93,7 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			f(x)(i) = exp(x(i)) / sum_over_j(exp(x(j)))
 
-3. **Error Functions**:
+4. **Error Functions**:
 
 	* **MeanSquared**:
 
@@ -100,15 +105,15 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 	* **NegativeLogLikelihood**:
 
-			f(y, o)(i) = - (o(i) * log(y(i)))
+			f(y, o)(i) = - o(i) * log(y(i))
 
-	* **CrossSigmoid**: composition of Sigmoid Transfer Function and
+	* **CrossSigmoid**: implements composition of Sigmoid Transfer Function and
 CrossEntropy Error Function
 
-	* **LogSoftMax**: composition of SoftMax Transfer Function and
+	* **LogSoftMax**: implements composition of SoftMax Transfer Function and
 NegativeLogLikelihood Error Function
 
-4. **Containers**:
+5. **Containers**:
 
 	* **Series**:
 
@@ -120,12 +125,12 @@ NegativeLogLikelihood Error Function
 
 	* **Recurrent**: implements time recurrence
 
-5. **Optimizers**:
+6. **Optimizers**:
 
 	* **Optimizer**: simplifies training and testing
 
-	* **Hyperoptimizer**: optimizes hyperparameters. Implements grid search and
-Nelder-Meads algorithm.
+	* **Hyperoptimizer**: optimizes hyperparameters, implements grid search and
+Nelder-Meads algorithm
 
 **Note**:
 

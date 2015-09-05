@@ -32,7 +32,7 @@ class DerivativesTestCase(unittest.TestCase):
 		epsilon = 0.0001
 		delta = 0.05
 		for rebel in self.rebels:
-			for i in range(500, 600):
+			for i in range(500, 525):
 				rebeler = rebel(i)
 				inputvector = numpy.random.rand(i, 1)
 				rebeler.feedforward(inputvector)

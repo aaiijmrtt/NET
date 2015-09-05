@@ -72,7 +72,7 @@ class Container:
 
 	def applydropout(self, probability = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
 				layer.applydropout(probability)
 
 class Series(Container):
