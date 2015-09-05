@@ -24,7 +24,27 @@ learning
 
 		* **Dropout**: implements dropout, prevents overfitting
 
-2. **Connectors**:
+2. **Convolutions**:
+
+	* **Convolutional**:
+
+			f(x) = [W * conv(x) + b]
+
+		all Layer modifiers are applicable to it
+
+	* **MaxPooling**:
+
+			f(x) = [max(conv(x))]
+
+	* **MinPooling**:
+
+			f(x) = [min(conv(x))]
+
+	* **AveragePooling**:
+
+			f(x) = [avg(conv(x))]
+
+3. **Connectors**:
 
 	* **Split**:
 
@@ -42,7 +62,7 @@ learning
 
 			f(x) = x
 
-3. **Transfer Functions**:
+4. **Transfer Functions**:
 
 	* **ShiftScale**:
 
@@ -93,7 +113,7 @@ learning
 
 			f(x)(i) = exp(x(i)) / sum_over_j(exp(x(j)))
 
-4. **Error Functions**:
+5. **Error Functions**:
 
 	* **MeanSquared**:
 
@@ -113,7 +133,7 @@ CrossEntropy Error Function
 	* **LogSoftMax**: implements composition of SoftMax Transfer Function and
 NegativeLogLikelihood Error Function
 
-5. **Containers**:
+6. **Containers**:
 
 	* **Series**:
 
@@ -125,7 +145,7 @@ NegativeLogLikelihood Error Function
 
 	* **Recurrent**: implements time recurrence
 
-6. **Optimizers**:
+7. **Optimizers**:
 
 	* **Optimizer**: simplifies training and testing
 

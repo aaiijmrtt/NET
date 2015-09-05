@@ -17,12 +17,12 @@ class Container:
 
 	def cleardeltas(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
 				layer.cleardeltas()
 
 	def updateweights(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
 				layer.updateweights()
 
 	def normalize(self):
@@ -42,37 +42,37 @@ class Container:
 
 	def trainingsetup(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
 				layer.trainingsetup()
 
 	def testingsetup(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
 				layer.trainingsetup()
 
 	def applylearningrate(self, alpha = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
 				layer.applylearningrate(alpha)
 
 	def applydecayrate(self, eta = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
 				layer.applydecayrate(eta)
 
 	def applyvelocity(self, gamma = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
 				layer.applyvelocity(gamma)
 
 	def applyregularization(self, lamda = None, regularizer = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
 				layer.applyregularization(lamda, regularizer)
 
 	def applydropout(self, probability = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
 				layer.applydropout(probability)
 
 class Series(Container):

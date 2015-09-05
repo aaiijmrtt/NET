@@ -56,7 +56,7 @@ class Hyperoptimizer(Optimizer):
 
 	def __init__(self, net, trainingset, testingset, validationset = None, criterion = None, hypercriterion = None):
 		Optimizer.__init__(self, net, trainingset, testingset, validationset, criterion)
-		self.hypercriterion = hypercriterion if hypercriterion is not None else lambda x: numpy.sum(x) / numpy.product(x.shape) # default set to average
+		self.hypercriterion = hypercriterion if hypercriterion is not None else numpy.mean # default set to average
 
 #	hyperparameters = [('applyvelocity', [.3, .5]), ('applylearningrate', [.025, .05])]
 	def gridsearch(self, hyperparameters, batch = 1, iterations = 1):

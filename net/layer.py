@@ -170,7 +170,7 @@ class Modifier:
 
 	def updateweights(self):
 		if not self.velocity:
-			return numpy.multiply(self.alpha / (1.0 + self.updates * self.eta), self.deltaweights), numpy.multiply(self.alpha / (1.0 + self.updates * self.eta), self.deltabiases)
+			return numpy.multiply(self.layer.alpha / (1.0 + self.layer.updates * self.layer.eta), self.layer.deltaweights), numpy.multiply(self.layer.alpha / (1.0 + self.layer.updates * self.layer.eta), self.layer.deltabiases)
 		self.velocityweights = numpy.add(numpy.multiply(self.gamma, self.velocityweights), numpy.multiply(self.layer.alpha / (1.0 + self.layer.updates * self.layer.eta), self.layer.deltaweights))
 		self.velocitybiases = numpy.add(numpy.multiply(self.gamma, self.velocitybiases), numpy.multiply(self.layer.alpha / (1.0 + self.layer.updates * self.layer.eta), self.layer.deltabiases))
 		return self.velocityweights, self.velocitybiases

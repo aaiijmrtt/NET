@@ -11,6 +11,7 @@ class DimensionsTestCase(unittest.TestCase):
 	def setUp(self):
 		self.singleparameterclasses = [net.Step, net.Sigmoid, net.HyperbolicTangent, net.HardHyperbolicTangent, net.RectifiedLinearUnit, net.ParametricRectifiedLinearUnit, net.HardShrink, net.SoftShrink, net.SoftMax, net.SoftPlus, net.ShiftScale, net.SoftSign, net.MeanSquared, net.CrossEntropy, net.NegativeLogLikelihood, net.CrossSigmoid, net.LogSoftMax]
 		self.doubleparameterclasses = [net.Linear, net.Split, net.MergeSum, net.MergeProduct]
+		self.quadrupleparameterclasses = [net.Convolutional, net.MaxPooling, net.MinPooling, net.AveragePooling]
 
 	def testsingleparameterclasses(self):
 		for singleparameterclass in self.singleparameterclasses:
@@ -28,6 +29,17 @@ class DimensionsTestCase(unittest.TestCase):
 					self.assertEqual(doubleparameter.feedforward(numpy.random.rand(doubleparameter.inputs, 1)).shape, (doubleparameter.outputs, 1), 'feedforward dimensions error in class %s' %doubleparameterclass)
 					self.assertEqual(doubleparameter.backpropagate(numpy.random.rand(doubleparameter.outputs, 1)).shape, (doubleparameter.inputs, 1), 'backpropagate dimensions error in class %s' %doubleparameterclass)
 					doubleparameter = None
+
+	def testquadrupleparameterclasses(self):
+		for quadrupleparameterclass in self.quadrupleparameterclasses:
+			for i in range(1, 10):
+				for j in range(1, 10):
+					for k in range(1, 10):
+						for l in range(1, min(i, j)):
+							quadrupleparameter = quadrupleparameterclass(i, j, k, l)
+							self.assertEqual(quadrupleparameter.feedforward(numpy.random.rand(quadrupleparameter.inputs, 1)).shape, (quadrupleparameter.outputs, 1), 'feedforward dimensions error in class %s' %quadrupleparameterclass)
+							self.assertEqual(quadrupleparameter.backpropagate(numpy.random.rand(quadrupleparameter.outputs, 1)).shape, (quadrupleparameter.inputs, 1), 'backpropagate dimensions error in class %s' %quadrupleparameterclass)
+							quadrupleparameter = None
 
 	def testseriesclass(self):
 		for i in range(1, 25):
