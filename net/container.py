@@ -74,6 +74,21 @@ class Container:
 			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
 				layer.applydropout(probability)
 
+	def applyadaptivegain(self, maximum = None, minimum = None, gainadapter = None):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
+				layer.applyadaptivegain(maximum, minimum, gainadapter)
+
+	def applyrootmeansquarepropagation(self, meu = None):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
+				layer.applyrootmeansquarepropagation(meu)
+
+	def applyadaptivegradient(self):
+		for layer in self.layers:
+			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
+				layer.applyadaptivegradient()
+
 class Series(Container):
 
 	def __init__(self):

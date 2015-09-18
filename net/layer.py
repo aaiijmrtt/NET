@@ -48,6 +48,15 @@ class Layer:
 	def applydropout(self, rho = None):
 		self.modifier.applydropout(rho)
 
+	def applyadaptivegain(self, tau = None, maximum = None, minimum = None):
+		self.modifier.applyadaptivegain(tau, maximum, minimum)
+
+	def applyrootmeansquarepropagation(self, meu = None):
+		self.modifier.applyrootmeansquarepropagation(meu)
+
+	def applyadaptivegradient(self):
+		self.modifier.applyadaptivegradient()
+
 class Linear(Layer):
 
 	def __init__(self, inputs, outputs, alpha = None, eta = None):
@@ -67,8 +76,6 @@ class Linear(Layer):
 		return numpy.dot(self.weights.transpose(), outputvector)
 
 class Normalizer(Layer):
-
-	hadamard = numpy.vectorize(lambda x, y: x * y)
 
 	def __init__(self, inputs, alpha = None, eta = None, epsilon = None):
 		Layer.__init__(self, inputs, inputs, alpha, eta)
@@ -90,13 +97,13 @@ class Normalizer(Layer):
 	def feedforward(self, inputvector): # ignores dropout
 		self.previousinput = inputvector
 		self.previousnormalized = numpy.divide(numpy.subtract(self.previousinput, self.mean), numpy.sqrt(numpy.add(self.epsilon, self.variance)))
-		self.previousoutput = numpy.add(Normalizer.hadamard(self.weights, self.previousnormalized), self.biases)
+		self.previousoutput = numpy.add(numpy.multiply(self.weights, self.previousnormalized), self.biases)
 		return self.previousoutput
 
 	def backpropagate(self, outputvector): # ignores dropout
-		self.deltaweights = numpy.add(self.deltaweights, Normalizer.hadamard(outputvector, self.previousnormalized))
+		self.deltaweights = numpy.add(self.deltaweights, numpy.multiply(outputvector, self.previousnormalized))
 		self.deltabiases = numpy.add(self.deltabiases, outputvector)
-		return Normalizer.hadamard(numpy.divide(self.weights, self.batch), numpy.divide(numpy.subtract(self.batch - 1, numpy.square(self.previousnormalized)), numpy.sqrt(numpy.add(self.epsilon, self.variance))))
+		return numpy.multiply(numpy.divide(self.weights, self.batch), numpy.divide(numpy.subtract(self.batch - 1, numpy.square(self.previousnormalized)), numpy.sqrt(numpy.add(self.epsilon, self.variance))))
 
 	def normalize(self):
 		self.mean = numpy.divide(self.linearsum, self.batch)
@@ -109,19 +116,46 @@ class Normalizer(Layer):
 
 class Modifier:
 
-	hadamard = numpy.vectorize(lambda x, y: x * y)
+	epsilon = 0.0001
+
+	L1regularizer = numpy.vectorize(lambda x: 1.0 if x > 0.0 else -1.0 if x < 0.0 else 0.0)
+	L2regularizer = numpy.vectorize(lambda x: x)
 
 	def __init__(self, layer):
 		self.layer = layer
+
+		self.velocity = False
 		self.gamma = None
-		self.lamda = None
-		self.rho = None
 		self.velocityweights = None
 		self.velocitybiases = None
-		self.regularizer = None
-		self.velocity = False
-		self.regularization = False
+
 		self.dropout = False
+		self.rho = None
+
+		self.lamda = None
+		self.regularizer = None
+		self.regularization = False
+
+		self.adaptivegain = False
+		self.tau = None
+		self.maxgain = None
+		self.mingain = None
+		self.gainadapter = None
+		self.gainclipper = None
+		self.gainweights = None
+		self.gainbiases = None
+		self.olddeltaweights = None
+		self.olddeltabiases = None
+
+		self.rootmeansquarepropagation = False
+		self.meu = None
+		self.meansquareweights = None
+		self.meansquarebiases = None
+
+		self.adaptivegradient = False
+		self.sumsquareweights = None
+		self.sumsquarebiases = None
+
 		self.training = None
 
 	def applyvelocity(self, gamma = None):
@@ -133,19 +167,67 @@ class Modifier:
 	def applyregularization(self, lamda = None, regularizer = None):
 		self.regularization = True
 		self.lamda = lamda if lamda is not None else 0.005 # default set at 0.005
-		self.regularizer = regularizer if regularizer is not None else numpy.vectorize(lambda x: x) # default set to L2 regularization
+		self.regularizer = regularizer if regularizer is not None else Modifier.L2regularizer # default set to L2 regularization
 
 	def applydropout(self, rho = None):
 		self.dropout = True
 		self.training = False
 		self.rho = rho if rho is not None else 0.75 # default set at 0.75
 
+	def applyadaptivegain(self, tau = None, maximum = None, minimum = None):
+		self.adaptivegain = True
+		self.tau = tau if tau is not None else 0.05 # default set to 0.05
+		self.maxgain = maximum if maximum is not None else 100.0 # default set to 100.0
+		self.mingain = minimum if minimum is not None else 0.01 # default set to 0.01
+		self.gainadapter = numpy.vectorize(lambda x, y, z: z + self.tau if x * y > 0.0 else z * (1.0 - self.tau))
+		self.gainclipper = numpy.vectorize(lambda x: self.mingain if x < self.mingain else self.maxgain if self.maxgain < x else x)
+		self.gainweights = numpy.ones(self.layer.weights.shape, dtype = float)
+		self.gainbiases = numpy.ones(self.layer.biases.shape, dtype = float)
+		self.olddeltaweights = numpy.copy(self.layer.deltaweights)
+		self.olddeltabiases = numpy.copy(self.layer.deltabiases)
+
+	def applyrootmeansquarepropagation(self, meu = None):
+		self.rootmeansquarepropagation = True
+		self.meu = meu if meu is not None else 0.9 # default set to 0.9
+		self.meansquareweights = numpy.zeros(self.layer.weights.shape, dtype = float)
+		self.meansquarebiases = numpy.zeros(self.layer.biases.shape, dtype = float)
+
+	def applyadaptivegradient(self):
+		self.adaptivegradient = True
+		self.sumsquareweights = numpy.zeros(self.layer.weights.shape, dtype = float)
+		self.sumsquarebiases = numpy.zeros(self.layer.biases.shape, dtype = float)
+
 	def updateweights(self):
-		if not self.velocity:
-			return numpy.multiply(self.layer.alpha / (1.0 + self.layer.updates * self.layer.eta), self.layer.deltaweights), numpy.multiply(self.layer.alpha / (1.0 + self.layer.updates * self.layer.eta), self.layer.deltabiases)
-		self.velocityweights = numpy.add(numpy.multiply(self.gamma, self.velocityweights), numpy.multiply(self.layer.alpha / (1.0 + self.layer.updates * self.layer.eta), self.layer.deltaweights))
-		self.velocitybiases = numpy.add(numpy.multiply(self.gamma, self.velocitybiases), numpy.multiply(self.layer.alpha / (1.0 + self.layer.updates * self.layer.eta), self.layer.deltabiases))
-		return self.velocityweights, self.velocitybiases
+		deltaweights = numpy.multiply(self.layer.alpha / (1.0 + self.layer.updates * self.layer.eta), self.layer.deltaweights)
+		deltabiases = numpy.multiply(self.layer.alpha / (1.0 + self.layer.updates * self.layer.eta), self.layer.deltabiases)
+
+		if self.rootmeansquarepropagation:
+			self.meansquareweights = numpy.add(numpy.multiply(self.meu, self.meansquareweights), numpy.multiply(1.0 - self.meu, numpy.square(self.layer.deltaweights)))
+			self.meansquarebiases = numpy.add(numpy.multiply(self.meu, self.meansquarebiases), numpy.multiply(1.0 - self.meu, numpy.square(self.layer.deltabiases)))
+			deltaweights = numpy.divide(deltaweights, numpy.sqrt(numpy.add(Modifier.epsilon, self.meansquareweights)))
+			deltabiases = numpy.divide(deltabiases, numpy.sqrt(numpy.add(Modifier.epsilon, self.meansquarebiases)))
+
+		if self.adaptivegradient:
+			self.sumsquareweights = numpy.add(self.sumsquareweights, numpy.square(self.layer.deltaweights))
+			self.sumsquarebiases = numpy.add(self.sumsquarebiases, numpy.square(self.layer.deltabiases))
+			deltaweights = numpy.divide(deltaweights, numpy.sqrt(numpy.add(Modifier.epsilon, self.sumsquareweights)))
+			deltabiases = numpy.divide(deltabiases, numpy.sqrt(numpy.add(Modifier.epsilon, self.sumsquarebiases)))
+
+		if self.adaptivegain:
+			self.gainweights = self.gainclipper(self.gainadapter(self.olddeltaweights, self.layer.deltaweights, self.gainweights))
+			self.gainbiases = self.gainclipper(self.gainadapter(self.olddeltabiases, self.layer.deltabiases, self.gainbiases))
+			self.olddeltaweights = numpy.copy(self.layer.deltaweights)
+			self.oldbiases = numpy.copy(self.layer.deltabiases)
+			deltaweights = numpy.multiply(self.gainweights, deltaweights)
+			deltabiases = numpy.multiply(self.gainbiases, deltabiases)
+
+		if self.velocity:
+			self.velocityweights = numpy.add(numpy.multiply(self.gamma, self.velocityweights), deltaweights)
+			self.velocitybiases = numpy.add(numpy.multiply(self.gamma, self.velocitybiases), deltabiases)
+			deltaweights = self.velocityweights
+			deltabiases = self.velocitybiases
+
+		return numpy.copy(deltaweights), numpy.copy(deltabiases)
 
 	def cleardeltas(self):
 		if not self.regularization:
@@ -155,16 +237,34 @@ class Modifier:
 	def feedforward(self, inputvector):
 		if not self.dropout:
 			return inputvector
-		return Modifier.hadamard(numpy.random.binomial(1, self.rho, inputvector.shape), inputvector) if self.training else numpy.multiply(self.rho, inputvector)
+		return numpy.multiply(numpy.random.binomial(1, self.rho, inputvector.shape), inputvector) if self.training else numpy.multiply(self.rho, inputvector)
 
 	def trainingsetup(self):
 		if self.velocity:
-			self.velocityweights = numpy.zeros(self.layer.weights.shape, dtype = float)
-			self.velocitybiases = numpy.zeros(self.layer.biases.shape, dtype = float)
+			self.applyvelocity(self.gamma)
+		if self.adaptivegain:
+			self.applyadaptivegain(self. tau, self.maxgain, self.mingain)
+		if self.rootmeansquarepropagation:
+			self.applyrootmeansquarepropagation(self.meu)
+		if self.adaptivegradient:
+			self.applyadaptivegradient()
 		self.training = True
 
 	def testingsetup(self):
 		if self.velocity:
 			self.velocityweights = None
 			self.velocitybiases = None
+		if self.adaptivegain:
+			self.gainadapter = None
+			self.gainclipper = None
+			self.gainweights = None
+			self.gainbiases = None
+			self.olddeltaweights = None
+			self.olddeltabiases = None
+		if self.rootmeansquarepropagation:
+			self.meansquareweights = None
+			self.meansquarebiases = None
+		if self.adaptivegradient:
+			self.sumsquareweights = None
+			self.sumsquarebiases = None
 		self.training = False

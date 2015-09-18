@@ -122,4 +122,4 @@ class SoftSign(Transfer):
 		self.derivative = numpy.vectorize(lambda x: 1.0 / (1.0 + numpy.fabs(x)) ** 2)
 
 	def backpropagate(self, outputvector):
-		return numpy.numtiply(outputvector, self.derivative(self.previousinput))
+		return numpy.multiply(outputvector, self.derivative(self.previousinput))

@@ -17,12 +17,37 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 	* **Modifier**:
 
-		* **Velocity**: implements momentum based gradient descent, accelerates
-learning
+		* **Velocity**:
 
-		* **Regularization**: implements regularization, prevents overfitting
+				v(t + 1) = p1 * v(t) + p2 * (dE(t) / dw(t))
+				w(t + 1) = w(t) - v(t)
 
-		* **Dropout**: implements dropout, prevents overfitting
+		* **AdaptiveGain**:
+
+				g(t + 1) = g(t) + p1 if (dE(t) / dw(t)) * (dE(t - 1) / dw(t - 1)) > 0
+						(1 - p1) * g(t) otherwise
+				w(t + 1) = w(t) - p2 * g(t) * dE(t) / dw(t)
+
+		* **AdaptiveGradient**:
+
+				sw(t + 1) = sw(t) + (dE(t) / dw(t)) ^ 2
+				w(t + 1) = w(t) - p / (sw(t + 1) + e) ^ 0.5 * (dE(t) / dw(t))
+
+		* **RootMeanSquarePropagation**:
+
+				msw(t + 1) = p1 * msw(t) + (1 - p1) * (dE(t) / dw(t)) ^ 2
+				w(t + 1) = w(t) - p2 / (msw(t + 1) + e) ^ 0.5 * (dE(t) / dw(t))
+
+		* **Regularization**:
+
+				E = E + f(w)
+
+		* **Dropout**:
+
+				during training: x(i) = x(i) if random() > p
+										0 otherwise
+
+				during testing: x(i) = p * x(i)
 
 2. **Convolutions**:
 
@@ -162,5 +187,6 @@ Nelder-Meads algorithm
 
 **Note**:
 
-* x(i) indexing is used to denote the i-th component of a vector x.
+* x(i) indexing is used to denote the i-th space component of a vector x.
+* x(t) indexing is used to denote the t-th time component of a vector x.
 * \[x1, x2\] is used to denote vector concanetation.
