@@ -127,6 +127,14 @@ learning
 
 			f(y, o)(i) = - o(i) * log(y(i))
 
+	* **KullbackLeiblerDivergence**:
+
+			f(y, o)(i) = o(i) * log(o(i) / y(i))
+
+	* **CosineDistance**:
+
+			f(y, o)(i) = - o(i) * y(i) / (sum_over_j(o(j) ^ 2) * sum_over_j(y(j) ^ 2)) ^ 0.5
+
 	* **CrossSigmoid**: implements composition of Sigmoid Transfer Function and
 CrossEntropy Error Function
 

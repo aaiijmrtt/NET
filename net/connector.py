@@ -2,18 +2,12 @@ import numpy
 
 class Split:
 
-	inputs = None
-	outputs = None
-
-	parameter = None
-
-	previousinput = None
-	previousoutput = None
-
 	def __init__(self, inputs, parameter):
 		self.inputs = inputs
 		self.parameter = parameter
 		self.outputs = self.inputs * self.parameter
+		self.previousinput = None
+		self.previousoutput = None
 
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
@@ -28,18 +22,12 @@ class Split:
 
 class MergeSum:
 
-	inputs = None
-	outputs = None
-
-	parameter = None
-
-	previousinput = None
-	previousoutput = None
-
 	def __init__(self, outputs, parameter):
 		self.outputs = outputs
 		self.parameter = parameter
 		self.inputs = self.outputs * self.parameter
+		self.previousinput = None
+		self.previousoutput = None
 
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
@@ -53,18 +41,12 @@ class MergeSum:
 
 class MergeProduct:
 
-	inputs = None
-	outputs = None
-
-	parameter = None
-
-	previousinput = None
-	previousoutput = None
-
 	def __init__(self, outputs, parameter):
 		self.outputs = outputs
 		self.parameter = parameter
 		self.inputs = self.outputs * self.parameter
+		self.previousinput = None
+		self.previousoutput = None
 
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
@@ -81,15 +63,11 @@ class MergeProduct:
 
 class Step:
 
-	inputs = None
-	outputs = None
-
-	previousinput = None
-	previousoutput = None
-
 	def __init__(self, inputs):
 		self.inputs = inputs
 		self.outputs = self.inputs
+		self.previousinput = None
+		self.previousoutput = None
 
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector

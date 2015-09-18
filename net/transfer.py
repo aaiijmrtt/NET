@@ -2,20 +2,13 @@ import numpy
 
 class Transfer:
 
-	inputs = None
-	outputs = None
-
-	previousinput = None
-	previousoutput = None
-
-	function = None
-	derivative = None
-	hadamard = None
-
 	def __init__(self, inputs):
 		self.inputs = inputs
 		self.outputs = self.inputs
-		self.hadamard = numpy.vectorize(lambda x, y: x * y)
+		self.previousinput = None
+		self.previousoutput = None
+		self.function = None
+		self.derivative = None
 
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector
@@ -23,7 +16,7 @@ class Transfer:
 		return self.previousoutput
 
 	def backpropagate(self, outputvector):
-		return self.hadamard(outputvector, self.derivative(self.previousoutput))
+		return numpy.multiply(outputvector, self.derivative(self.previousoutput))
 
 class Sigmoid(Transfer):
 
@@ -55,8 +48,6 @@ class RectifiedLinearUnit(Transfer):
 
 class ParametricRectifiedLinearUnit(Transfer):
 
-	parameter = None
-
 	def __init__(self, inputs, parameter = None):
 		Transfer.__init__(self, inputs)
 		self.parameter = parameter if parameter is not None else 0.01 # default set at 0.01
@@ -65,8 +56,6 @@ class ParametricRectifiedLinearUnit(Transfer):
 
 class HardShrink(Transfer):
 
-	parameter = None
-
 	def __init__(self, inputs, parameter = None):
 		Transfer.__init__(self, inputs)
 		self.parameter = parameter if parameter is not None else 1.0 # default set at 1.0
@@ -74,8 +63,6 @@ class HardShrink(Transfer):
 		self.derivative = numpy.vectorize(lambda x: 0.0 if -self.parameter < x < self.parameter else 1.0)
 
 class SoftShrink(Transfer):
-
-	parameter = None
 
 	def __init__(self, inputs, parameter = None):
 		Transfer.__init__(self, inputs)
@@ -96,15 +83,11 @@ class SoftMax(Transfer):
 		return self.previousoutput
 
 	def backpropagate(self, outputvector):
-		had = self.hadamard(self.previousoutput, outputvector)
+		had = numpy.multiply(self.previousoutput, outputvector)
 		dot = numpy.dot(numpy.dot(self.previousoutput, self.previousoutput.transpose()), outputvector)
 		return numpy.subtract(had, dot)
 
 class SoftPlus(Transfer):
-
-	previoushidden = None
-	parameter = None
-	exponential = None
 
 	def __init__(self, inputs, parameter = None):
 		Transfer.__init__(self, inputs)
@@ -120,12 +103,9 @@ class SoftPlus(Transfer):
 		return self.previousoutput
 
 	def backpropagate(self, outputvector):
-		return self.hadamard(outputvector, self.derivative(self.previoushidden))
+		return numpy.multiply(outputvector, self.derivative(self.previoushidden))
 
 class ShiftScale(Transfer):
-
-	scale = None
-	shift = None
 
 	def __init__(self, inputs, scale = None, shift = None):
 		Transfer.__init__(self, inputs)
@@ -142,4 +122,4 @@ class SoftSign(Transfer):
 		self.derivative = numpy.vectorize(lambda x: 1.0 / (1.0 + numpy.fabs(x)) ** 2)
 
 	def backpropagate(self, outputvector):
-		return self.hadamard(outputvector, self.derivative(self.previousinput))
+		return numpy.numtiply(outputvector, self.derivative(self.previousinput))

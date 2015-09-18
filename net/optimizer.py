@@ -1,22 +1,14 @@
-import numpy, copy, operator
+import numpy, copy, operator, error
 
 class Optimizer:
-
-	net = None
-
-	trainingset = None
-	validationset = None
-	testingset = None
-
-	criterion = None
-	error = None
 
 	def __init__(self, net, trainingset, testingset, validationset = None, criterion = None):
 		self.net = net
 		self.trainingset = trainingset
 		self.validationset = validationset if validationset is not None else testingset # default set to testing set
 		self.testingset = testingset
-		self.criterion = numpy.vectorize(criterion) if criterion is not None else numpy.vectorize(lambda x, y: 0.5 * (x - y) ** 2) # default set to half mean squared
+		self.criterion = criterion if criterion is not None else error.MeanSquared.compute # default set to half mean squared
+		self.error = None
 
 	def train(self, batch = 1, iterations = 1):
 		self.net.timingsetup()
@@ -52,11 +44,9 @@ class Optimizer:
 
 class Hyperoptimizer(Optimizer):
 
-	hypercriterion = None
-
 	def __init__(self, net, trainingset, testingset, validationset = None, criterion = None, hypercriterion = None):
 		Optimizer.__init__(self, net, trainingset, testingset, validationset, criterion)
-		self.hypercriterion = hypercriterion if hypercriterion is not None else numpy.mean # default set to average
+		self.hypercriterion = hypercriterion if hypercriterion is not None else numpy.sum # default set to sum
 
 #	hyperparameters = [('applyvelocity', [.3, .5]), ('applylearningrate', [.025, .05])]
 	def gridsearch(self, hyperparameters, batch = 1, iterations = 1):

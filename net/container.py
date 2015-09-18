@@ -2,13 +2,12 @@ import numpy
 
 class Container:
 
-	layers = None
-
-	inputs = None
-	outputs = None
-
-	previousinput = None
-	previousoutput = None
+	def __init__(self):
+		self.layers = list()
+		self.inputs = None
+		self.outputs = None
+		self.previousinput = None
+		self.previousoutput = None
 
 	def accumulate(self, inputvector):
 		for layer in self.layers:
@@ -78,7 +77,7 @@ class Container:
 class Series(Container):
 
 	def __init__(self):
-		self.layers = list()
+		Container.__init__(self)
 
 	def addlayer(self, layer):
 		self.layers.append(layer)
@@ -100,11 +99,8 @@ class Series(Container):
 
 class Parallel(Container):
 
-	inputdimensions = None
-	outputdimensions = None
-
 	def __init__(self):
-		self.layers = list()
+		Container.__init__(self)
 		self.inputdimensions = [0]
 		self.outputdimensions = [0]
 		self.inputs = 0
@@ -133,17 +129,14 @@ class Parallel(Container):
 
 class Recurrent(Container):
 
-	hiddens = None
-
-	previoushiddens = None
-	previousdeltas = None
-
 	def __init__(self, hiddens, layer):
-		self.layers = list()
+		Container.__init__(self)
 		self.layers.append(layer)
 		self.hiddens = hiddens
 		self.inputs = self.layers[0].inputs - self.hiddens
 		self.outputs = self.layers[0].outputs - self.hiddens
+		self.previoushiddens = None
+		self.previousdeltas = None
 
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector

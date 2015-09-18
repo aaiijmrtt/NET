@@ -7,9 +7,10 @@ class DimensionsTestCase(unittest.TestCase):
 
 	singleparameterclasses = None
 	doubleparameterclasses = None
+	quadrupleparameterclasses = None
 
 	def setUp(self):
-		self.singleparameterclasses = [net.Step, net.Sigmoid, net.HyperbolicTangent, net.HardHyperbolicTangent, net.RectifiedLinearUnit, net.ParametricRectifiedLinearUnit, net.HardShrink, net.SoftShrink, net.SoftMax, net.SoftPlus, net.ShiftScale, net.SoftSign, net.MeanSquared, net.CrossEntropy, net.NegativeLogLikelihood, net.CrossSigmoid, net.LogSoftMax]
+		self.singleparameterclasses = [net.Step, net.Sigmoid, net.HyperbolicTangent, net.HardHyperbolicTangent, net.RectifiedLinearUnit, net.ParametricRectifiedLinearUnit, net.HardShrink, net.SoftShrink, net.SoftMax, net.SoftPlus, net.ShiftScale, net.SoftSign, net.MeanSquared, net.CrossEntropy, net.NegativeLogLikelihood, net.CrossSigmoid, net.LogSoftMax, net.KullbackLeiblerDivergence, net.CosineDistance]
 		self.doubleparameterclasses = [net.Linear, net.Split, net.MergeSum, net.MergeProduct]
 		self.quadrupleparameterclasses = [net.Convolutional, net.MaxPooling, net.MinPooling, net.AveragePooling]
 
@@ -34,7 +35,7 @@ class DimensionsTestCase(unittest.TestCase):
 		for quadrupleparameterclass in self.quadrupleparameterclasses:
 			for i in range(1, 10):
 				for j in range(1, 10):
-					for k in range(1, 10):
+					for k in range(1, 3):
 						for l in range(1, min(i, j)):
 							quadrupleparameter = quadrupleparameterclass(i, j, k, l)
 							self.assertEqual(quadrupleparameter.feedforward(numpy.random.rand(quadrupleparameter.inputs, 1)).shape, (quadrupleparameter.outputs, 1), 'feedforward dimensions error in class %s' %quadrupleparameterclass)

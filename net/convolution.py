@@ -2,17 +2,6 @@ import numpy, layer
 
 class Convolution:
 
-	height = None
-	width = None
-	depth = None
-
-	rows = None
-	columns = None
-
-	stride = None
-	extent = None
-	padding = None
-
 	def __init__(self, height, width, depth, extent, stride = None, padding = None):
 		self.height = height
 		self.width = width
@@ -75,20 +64,15 @@ class Convolutional(layer.Layer, Convolution):
 
 class Pooling(Convolution):
 
-	inputs = None
-	outputs = None
-
-	previousinput = None
-	previousoutput = None
-
-	function = None
-	derivative = None
-
 	def __init__(self, height, width, depth, extent, stride = None):
 		stride = stride if stride is not None else extent
 		Convolution.__init__(self, height, width, depth, extent, stride, 0)
 		self.inputs = self.height * self.width * self.depth
 		self.outputs = self.rows * self.columns
+		self.previousinput = None
+		self.previousoutput = None
+		self.function = None
+		self.derivative = None
 
 	def feedforward(self, inputvector):
 		self.previousinput = inputvector

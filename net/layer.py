@@ -2,30 +2,19 @@ import numpy
 
 class Layer:
 
-	inputs = None
-	outputs = None
-	updates = None
-
-	weights = None
-	biases = None
-
-	alpha = None
-	eta = None
-
-	deltaweights = None
-	deltabiases = None
-
-	modifier = None
-
-	previousinput = None
-	previousoutput = None
-
-	def __init__(self, inputs, alpha = None, eta = None):
+	def __init__(self, inputs, outputs, alpha = None, eta = None):
 		self.inputs = inputs
+		self.outputs = outputs
 		self.applylearningrate(alpha)
 		self.applydecayrate(eta)
 		self.updates = 0
 		self.modifier = Modifier(self)
+		self.weights = None
+		self.biases = None
+		self.deltaweights = None
+		self.deltabiases = None
+		self.previousinput = None
+		self.previousoutput = None
 
 	def cleardeltas(self):
 		self.deltaweights, self.deltabiases = self.modifier.cleardeltas()
@@ -62,8 +51,7 @@ class Layer:
 class Linear(Layer):
 
 	def __init__(self, inputs, outputs, alpha = None, eta = None):
-		Layer.__init__(self, inputs, alpha, eta)
-		self.outputs = outputs
+		Layer.__init__(self, inputs, outputs, alpha, eta)
 		self.weights = numpy.random.normal(0.0, 1.0 / numpy.sqrt(self.inputs), (self.outputs, self.inputs))
 		self.biases = numpy.random.normal(0.0, 1.0 / numpy.sqrt(self.inputs), (self.outputs, 1))
 		self.cleardeltas()
@@ -80,28 +68,19 @@ class Linear(Layer):
 
 class Normalizer(Layer):
 
-	batch = None
-	hadamard = None
-
-	linearsum = None
-	quadraticsum = None
-	mean = None
-	variance = None
-	epsilon = None
-
-	previousnormalized = None
+	hadamard = numpy.vectorize(lambda x, y: x * y)
 
 	def __init__(self, inputs, alpha = None, eta = None, epsilon = None):
-		Layer.__init__(self, inputs, alpha, eta)
-		self.outputs = self.inputs
+		Layer.__init__(self, inputs, inputs, alpha, eta)
 		self.weights = numpy.ones((self.inputs, 1), dtype = float)
 		self.biases = numpy.zeros((self.inputs, 1), dtype = float)
 		self.mean = numpy.zeros((self.inputs, 1), dtype = float)
 		self.variance = numpy.ones((self.inputs, 1), dtype = float)
 		self.epsilon = epsilon if epsilon is not None else 0.0001
 		self.batch = 1
-		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 		self.cleardeltas()
+		self.linearsum = None
+		self.quadraticsum = None
 
 	def accumulate(self, inputvector):
 		self.linearsum = numpy.add(self.linearsum, inputvector)
@@ -111,13 +90,13 @@ class Normalizer(Layer):
 	def feedforward(self, inputvector): # ignores dropout
 		self.previousinput = inputvector
 		self.previousnormalized = numpy.divide(numpy.subtract(self.previousinput, self.mean), numpy.sqrt(numpy.add(self.epsilon, self.variance)))
-		self.previousoutput = numpy.add(self.hadamard(self.weights, self.previousnormalized), self.biases)
+		self.previousoutput = numpy.add(Normalizer.hadamard(self.weights, self.previousnormalized), self.biases)
 		return self.previousoutput
 
 	def backpropagate(self, outputvector): # ignores dropout
-		self.deltaweights = numpy.add(self.deltaweights, self.hadamard(outputvector, self.previousnormalized))
+		self.deltaweights = numpy.add(self.deltaweights, Normalizer.hadamard(outputvector, self.previousnormalized))
 		self.deltabiases = numpy.add(self.deltabiases, outputvector)
-		return numpy.multiply(self.weights / self.batch, numpy.divide(numpy.subtract(self.batch - 1, numpy.square(self.previousnormalized)), numpy.sqrt(numpy.add(self.epsilon, self.variance))))
+		return Normalizer.hadamard(numpy.divide(self.weights, self.batch), numpy.divide(numpy.subtract(self.batch - 1, numpy.square(self.previousnormalized)), numpy.sqrt(numpy.add(self.epsilon, self.variance))))
 
 	def normalize(self):
 		self.mean = numpy.divide(self.linearsum, self.batch)
@@ -130,26 +109,20 @@ class Normalizer(Layer):
 
 class Modifier:
 
-	layer = None
-
-	gamma = None
-	lamda = None
-	rho = None
-
-	velocityweights = None
-	velocitybiases = None
-
-	regularizer = None
-	hadamard = None
-
-	velocity = None
-	regularization = None
-	dropout = None
-
-	training = None
+	hadamard = numpy.vectorize(lambda x, y: x * y)
 
 	def __init__(self, layer):
 		self.layer = layer
+		self.gamma = None
+		self.lamda = None
+		self.rho = None
+		self.velocityweights = None
+		self.velocitybiases = None
+		self.regularizer = None
+		self.velocity = False
+		self.regularization = False
+		self.dropout = False
+		self.training = None
 
 	def applyvelocity(self, gamma = None):
 		self.velocity = True
@@ -166,7 +139,6 @@ class Modifier:
 		self.dropout = True
 		self.training = False
 		self.rho = rho if rho is not None else 0.75 # default set at 0.75
-		self.hadamard = numpy.vectorize(lambda x, y: x * y)
 
 	def updateweights(self):
 		if not self.velocity:
@@ -183,7 +155,7 @@ class Modifier:
 	def feedforward(self, inputvector):
 		if not self.dropout:
 			return inputvector
-		return self.hadamard(numpy.random.binomial(1, self.rho, inputvector.shape), inputvector) if self.training else numpy.multiply(self.rho, inputvector)
+		return Modifier.hadamard(numpy.random.binomial(1, self.rho, inputvector.shape), inputvector) if self.training else numpy.multiply(self.rho, inputvector)
 
 	def trainingsetup(self):
 		if self.velocity:
