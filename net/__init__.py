@@ -1,5 +1,6 @@
 from layer import *
 from convolution import *
+from modifier import *
 from connector import *
 from transfer import *
 from error import *

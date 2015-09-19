@@ -74,10 +74,10 @@ class Container:
 			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
 				layer.applydropout(probability)
 
-	def applyadaptivegain(self, maximum = None, minimum = None, gainadapter = None):
+	def applyadaptivegain(self, tau = None, maximum = None, minimum = None):
 		for layer in self.layers:
 			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
-				layer.applyadaptivegain(maximum, minimum, gainadapter)
+				layer.applyadaptivegain(tau, maximum, minimum)
 
 	def applyrootmeansquarepropagation(self, meu = None):
 		for layer in self.layers:

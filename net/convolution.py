@@ -37,9 +37,9 @@ class Convolution:
 
 class Convolutional(layer.Layer, Convolution):
 
-	def __init__(self, height, width, depth, extent, alpha = None, eta = None, stride = None, padding = None):
+	def __init__(self, height, width, depth, extent, alpha = None, stride = None, padding = None):
 		Convolution.__init__(self, height, width, depth, extent, stride, padding)
-		layer.Layer.__init__(self, self.height * self.width * self.depth, alpha, eta)
+		layer.Layer.__init__(self, self.height * self.width * self.depth, alpha)
 		self.outputs = self.rows * self.columns
 		self.weights = numpy.ones((1, self.extent * self.extent * self.depth), dtype = float)
 		self.biases = numpy.ones((1, 1), dtype = float)

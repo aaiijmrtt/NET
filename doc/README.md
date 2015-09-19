@@ -11,43 +11,13 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			f(x) = W * x + b
 
+		all modifiers are applicable to it
+
 	* **Normalizer**:
 
 			f(x)(i) = p1 * (x(i) - m(x(i))) / (v(x(i)) + e) ^ 0.5 + p2
 
-	* **Modifier**:
-
-		* **Velocity**:
-
-				v(t + 1) = p1 * v(t) + p2 * (dE(t) / dw(t))
-				w(t + 1) = w(t) - v(t)
-
-		* **AdaptiveGain**:
-
-				g(t + 1) = g(t) + p1 if (dE(t) / dw(t)) * (dE(t - 1) / dw(t - 1)) > 0
-						(1 - p1) * g(t) otherwise
-				w(t + 1) = w(t) - p2 * g(t) * dE(t) / dw(t)
-
-		* **AdaptiveGradient**:
-
-				sw(t + 1) = sw(t) + (dE(t) / dw(t)) ^ 2
-				w(t + 1) = w(t) - p / (sw(t + 1) + e) ^ 0.5 * (dE(t) / dw(t))
-
-		* **RootMeanSquarePropagation**:
-
-				msw(t + 1) = p1 * msw(t) + (1 - p1) * (dE(t) / dw(t)) ^ 2
-				w(t + 1) = w(t) - p2 / (msw(t + 1) + e) ^ 0.5 * (dE(t) / dw(t))
-
-		* **Regularization**:
-
-				E = E + f(w)
-
-		* **Dropout**:
-
-				during training: x(i) = x(i) if random() > p
-										0 otherwise
-
-				during testing: x(i) = p * x(i)
+		all modifiers are applicable to it
 
 2. **Convolutions**:
 
@@ -55,7 +25,7 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			f(x) = [W * conv(x) + b]
 
-		all Layer modifiers are applicable to it
+		all modifiers are applicable to it
 
 	* **MaxPooling**:
 
@@ -69,7 +39,44 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			f(x) = [avg(conv(x))]
 
-3. **Connectors**:
+3.	**Modifiers**:
+
+	* **Decay**:
+
+			w(t + 1) = w(t) - p1 / (1 + t * p2) * (dE(t) / dw(t))
+
+	* **Velocity**:
+
+			v(t + 1) = p1 * v(t) + p2 * (dE(t) / dw(t))
+			w(t + 1) = w(t) - v(t)
+
+	* **AdaptiveGain**:
+
+			g(t + 1) = g(t) + p1 if (dE(t) / dw(t)) * (dE(t - 1) / dw(t - 1)) > 0
+					(1 - p1) * g(t) otherwise
+			w(t + 1) = w(t) - p2 * g(t) * dE(t) / dw(t)
+
+	* **AdaptiveGradient**:
+
+			sw(t + 1) = sw(t) + (dE(t) / dw(t)) ^ 2
+			w(t + 1) = w(t) - p / (sw(t + 1) + e) ^ 0.5 * (dE(t) / dw(t))
+
+	* **RootMeanSquarePropagation**:
+
+			msw(t + 1) = p1 * msw(t) + (1 - p1) * (dE(t) / dw(t)) ^ 2
+			w(t + 1) = w(t) - p2 / (msw(t + 1) + e) ^ 0.5 * (dE(t) / dw(t))
+
+	* **Regularization**:
+
+			E = E + f(w)
+
+	* **Dropout**:
+
+			during training: x(i) = x(i) if random() > p
+									0 otherwise
+			during testing: x(i) = p * x(i)
+
+4. **Connectors**:
 
 	* **Split**:
 
@@ -87,7 +94,7 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			f(x) = x
 
-4. **Transfer Functions**:
+5. **Transfer Functions**:
 
 	* **ShiftScale**:
 
@@ -138,7 +145,7 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			f(x)(i) = exp(x(i)) / sum_over_j(exp(x(j)))
 
-5. **Error Functions**:
+6. **Error Functions**:
 
 	* **MeanSquared**:
 
@@ -166,7 +173,7 @@ CrossEntropy Error Function
 	* **LogSoftMax**: implements composition of SoftMax Transfer Function and
 NegativeLogLikelihood Error Function
 
-6. **Containers**:
+7. **Containers**:
 
 	* **Series**:
 
@@ -178,7 +185,7 @@ NegativeLogLikelihood Error Function
 
 	* **Recurrent**: implements time recurrence
 
-7. **Optimizers**:
+8. **Optimizers**:
 
 	* **Optimizer**: simplifies training and testing
 
