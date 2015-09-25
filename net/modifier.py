@@ -88,7 +88,7 @@ class Decay:
 		self.updates += 1
 		return learningrate
 
-	def trainigsetup(self):
+	def trainingsetup(self):
 		self.__init__(self.modifier)
 
 	def testingsetup(self):
