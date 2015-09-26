@@ -1,4 +1,4 @@
-import numpy, copy, operator, error
+import numpy, copy, error
 
 class Optimizer:
 
@@ -104,7 +104,7 @@ class Hyperoptimizer(Optimizer):
 			self.net = copy.deepcopy(backupnet)
 
 		for iteration in range(hyperiterations):
-			costs, simplex = zip(*sorted(zip(costs, simplex), key = operator.itemgetter(0)))
+			costs, simplex = zip(*sorted(zip(costs, simplex), key = lambda x: x[0]))
 			costs, simplex = list(costs), list(simplex)
 
 			centroid = numpy.divide(numpy.sum(simplex, axis = 0), dimensions)
