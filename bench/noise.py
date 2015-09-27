@@ -65,10 +65,11 @@ class Uniform:
 	def sample(self):
 		return numpy.random.uniform(self.lowerlimit, self.upperlimit)
 
+# apply noise before piecing together as Curve
 class NoisyUnivariate(univariate.Univariate):
 
 	def __init__(self, pureunivariate, noise, additive = None):
-		univariate.Univariate.__init__(self, pureunivariate.begin, pureunivariate.end, pureunivariate.value, pureunivariate.point, pureunivariate.shift)
+		univariate.Univariate.__init__(self, pureunivariate.begin, pureunivariate.end, pureunivariate.value, pureunivariate.point, pureunivariate.shift, pureunivariate.lowerlimit, pureunivariate.upperlimit, pureunivariate.stepsize, pureunivariate.functiondepictor, pureunivariate.derivativedepictor)
 		self.purefunction = pureunivariate.function
 		self.purederivative = pureunivariate.derivative
 		self.noise = noise

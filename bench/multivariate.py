@@ -2,10 +2,9 @@ import numpy, visualize
 
 class Multivariate(visualize.MultivariatePlot):
 
-	def __init__(self, univariatelist):
+	def __init__(self, univariatelist, lowerlimits = None, upperlimits = None, stepsizes = None, functiondepictor = None, derivativedepictor = None):
 		self.univariatelist = univariatelist
-		self.combinefunction = None
-		self.combinederivative = None
+		visualize.MultivariatePlot.__init__(self, lowerlimits, upperlimits, stepsizes, functiondepictor, derivativedepictor)
 
 	def minima(self):
 		minimavector = numpy.empty((len(self.univariatelist), 1), dtype = float)
@@ -37,29 +36,34 @@ class Multivariate(visualize.MultivariatePlot):
 
 class Sum(Multivariate):
 
-	def __init__(self, univariatelist):
-		Multivariate.__init__(self, univariatelist)
+	def __init__(self, univariatelist, lowerlimits = None, upperlimits = None, stepsizes = None, functiondepictor = None, derivativedepictor = None):
+		Multivariate.__init__(self, univariatelist, lowerlimits, upperlimits, stepsizes, functiondepictor, derivativedepictor)
 		self.combinefunction = numpy.sum
 		self.combinederivative = lambda x, y: y
 
 class L1Norm(Multivariate):
 
-	def __init__(self, univariatelist):
-		Multivariate.__init__(self, univariatelist)
+	def __init__(self, univariatelist, lowerlimits = None, upperlimits = None, stepsizes = None, functiondepictor = None, derivativedepictor = None):
+		Multivariate.__init__(self, univariatelist, lowerlimits, upperlimits, stepsizes, functiondepictor, derivativedepictor)
 		self.combinefunction = lambda x: numpy.sum(numpy.abs(x))
 		self.combinederivative = numpy.vectorize(lambda x, y: -y if x < 0.0 else y)
 
 class L2Norm(Multivariate):
 
-	def __init__(self, univariatelist):
-		Multivariate.__init__(self, univariatelist)
-		self.combinefunction = lambda x: numpy.sum(numpy.square(x))
+	def __init__(self, univariatelist, lowerlimits = None, upperlimits = None, stepsizes = None, functiondepictor = None, derivativedepictor = None):
+		Multivariate.__init__(self, univariatelist, lowerlimits, upperlimits, stepsizes, functiondepictor, derivativedepictor)
+		self.combinefunction = lambda x: numpy.power(numpy.sum(numpy.square(x)), 0.5)
 		self.combinederivative = lambda x, y: numpy.divide(numpy.multiply(x, y), numpy.sqrt(numpy.sum(numpy.square(x))))
 
 class LPNorm(Multivariate):
 
-	def __init__(self, univariatelist, power = None):
-		Multivariate.__init__(self, univariatelist)
+	def __init__(self, univariatelist, power = None, lowerlimits = None, upperlimits = None, stepsizes = None, functiondepictor = None, derivativedepictor = None):
+		Multivariate.__init__(self, univariatelist, lowerlimits, upperlimits, stepsizes, functiondepictor, derivativedepictor)
 		self.power = power if power is not None else 1.0
-		self.combinefunction = lambda x: numpy.power(numpy.sum(numpy.power(x, self.power)), 1.0 / self.power)
-		self.combinederivative = lambda x, y: numpy.multiply(numpy.power(numpy.sum(numpy.power(numpy.abs(x), self.power)), 1.0 / self.power - 1.0), numpy.multiply(x, y))
+		self.combinefunction = lambda x: numpy.power(numpy.sum(numpy.power(numpy.abs(x), self.power)), 1.0 / self.power)
+		self.helper = numpy.vectorize(lambda w, x, y, z: - w * y * z if x < 0.0 else w * y * z)
+
+	def combinederivative(self, functionvalues, derivativevalues):
+		factor = numpy.power(numpy.sum(numpy.power(numpy.abs(functionvalues), self.power)), 1.0 / self.power - 1.0)
+		powervalues = numpy.power(numpy.abs(functionvalues), self.power - 1.0)
+		return self.helper(factor, functionvalues, derivativevalues, powervalues)
