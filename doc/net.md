@@ -145,7 +145,35 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			f(x)(i) = exp(x(i)) / sum_over_j(exp(x(j)))
 
-6. **Error Functions**:
+6. **Radial Basis Functions**:
+
+			r(i) = (sum_over_j((x(j) - p1(i)(j)) ^ 2) ^ 0.5
+
+	* **Gaussian**:
+
+			f(x)(i) = exp(- r(i) ^ 2 / p2 ^ 2)
+
+	* **MultiQuadratic**:
+
+			f(x)(i) = (r(i) ^ 2 + p2 ^ 2) ^ p3
+
+	* **InverseMultiQuadratic**:
+
+			f(x)(i) = (r(i) ^ 2 + p2 ^ 2) ^ (-p3)
+
+	* **ThinPlateSpine**:
+
+			f(x)(i) = r(i) ^ 2 * log(r(i))
+
+	* **Cubic**:
+
+			f(x)(i) = r(i) ^ 3
+
+	* **Linear**:
+
+			f(x)(i) = r(i)
+
+7. **Error Functions**:
 
 	* **MeanSquared**:
 
@@ -173,7 +201,7 @@ CrossEntropy Error Function
 	* **LogSoftMax**: implements composition of SoftMax Transfer Function and
 NegativeLogLikelihood Error Function
 
-7. **Containers**:
+8. **Containers**:
 
 	* **Series**:
 
@@ -185,7 +213,7 @@ NegativeLogLikelihood Error Function
 
 	* **Recurrent**: implements time recurrence
 
-8. **Optimizers**:
+9. **Optimizers**:
 
 	* **Optimizer**: simplifies training and testing
 
