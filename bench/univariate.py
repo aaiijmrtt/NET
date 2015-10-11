@@ -1,4 +1,5 @@
-import numpy, visualize
+import numpy
+from . import visualize
 
 class Univariate(visualize.UnivariatePlot):
 

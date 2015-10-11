@@ -1,4 +1,5 @@
-import numpy, modifier
+import numpy
+from . import modifier
 
 class Layer:
 
@@ -7,23 +8,22 @@ class Layer:
 		self.outputs = outputs
 		self.modifier = modifier.Modifier(self)
 		self.applylearningrate(alpha)
-		self.weights = None
-		self.biases = None
-		self.deltaweights = None
-		self.deltabiases = None
+		self.parameters = dict()
+		self.deltaparameters = dict()
 		self.previousinput = None
 		self.previousoutput = None
 
 	def cleardeltas(self):
-		self.deltaweights, self.deltabiases = self.modifier.cleardeltas()
+		self.deltaparameters = self.modifier.cleardeltas()
 
 	def updateweights(self):
-		self.deltaweights, self.deltabiases = self.modifier.updateweights()
-		self.weights = numpy.subtract(self.weights, self.deltaweights)
-		self.biases = numpy.subtract(self.biases, self.deltabiases)
+		self.deltaparameters = self.modifier.updateweights()
+		for parameter in self.parameters:
+			self.parameters[parameter] = numpy.subtract(self.parameters[parameter], self.deltaparameters[parameter])
 		self.cleardeltas()
 
 	def trainingsetup(self):
+		self.cleardeltas()
 		self.modifier.trainingsetup()
 
 	def testingsetup(self):
@@ -57,29 +57,30 @@ class Linear(Layer):
 
 	def __init__(self, inputs, outputs, alpha = None):
 		Layer.__init__(self, inputs, outputs, alpha)
-		self.weights = numpy.random.normal(0.0, 1.0 / numpy.sqrt(self.inputs), (self.outputs, self.inputs))
-		self.biases = numpy.random.normal(0.0, 1.0 / numpy.sqrt(self.inputs), (self.outputs, 1))
+		self.parameters['weights'] = numpy.random.normal(0.0, 1.0 / numpy.sqrt(self.inputs), (self.outputs, self.inputs))
+		self.parameters['biases'] = numpy.random.normal(0.0, 1.0 / numpy.sqrt(self.inputs), (self.outputs, 1))
 		self.cleardeltas()
 
 	def feedforward(self, inputvector):
 		self.previousinput = self.modifier.feedforward(inputvector)
-		self.previousoutput = numpy.add(numpy.dot(self.weights, self.previousinput), self.biases)
+		self.previousoutput = numpy.add(numpy.dot(self.parameters['weights'], self.previousinput), self.parameters['biases'])
 		return self.previousoutput
 
 	def backpropagate(self, outputvector):
-		self.deltaweights = numpy.add(self.deltaweights, numpy.dot(outputvector, self.previousinput.transpose()))
-		self.deltabiases = numpy.add(self.deltabiases, outputvector)
-		return numpy.dot(self.weights.transpose(), outputvector)
+		self.deltaparameters['weights'] = numpy.add(self.deltaparameters['weights'], numpy.dot(outputvector, numpy.transpose(self.previousinput)))
+		self.deltaparameters['biases'] = numpy.add(self.deltaparameters['biases'], outputvector)
+		return numpy.dot(numpy.transpose(self.parameters['weights']), outputvector)
 
 class Normalizer(Layer):
 
-	def __init__(self, inputs, alpha = None, epsilon = None):
+	epsilon = 0.0001
+
+	def __init__(self, inputs, alpha = None):
 		Layer.__init__(self, inputs, inputs, alpha)
-		self.weights = numpy.ones((self.inputs, 1), dtype = float)
-		self.biases = numpy.zeros((self.inputs, 1), dtype = float)
+		self.parameters['weights'] = numpy.ones((self.inputs, 1), dtype = float)
+		self.parameters['biases'] = numpy.zeros((self.inputs, 1), dtype = float)
 		self.mean = numpy.zeros((self.inputs, 1), dtype = float)
 		self.variance = numpy.ones((self.inputs, 1), dtype = float)
-		self.epsilon = epsilon if epsilon is not None else 0.0001
 		self.batch = 1
 		self.cleardeltas()
 		self.linearsum = None
@@ -92,14 +93,14 @@ class Normalizer(Layer):
 
 	def feedforward(self, inputvector): # ignores dropout
 		self.previousinput = inputvector
-		self.previousnormalized = numpy.divide(numpy.subtract(self.previousinput, self.mean), numpy.sqrt(numpy.add(self.epsilon, self.variance)))
-		self.previousoutput = numpy.add(numpy.multiply(self.weights, self.previousnormalized), self.biases)
+		self.previousnormalized = numpy.divide(numpy.subtract(self.previousinput, self.mean), numpy.sqrt(numpy.add(Normalizer.epsilon, self.variance)))
+		self.previousoutput = numpy.add(numpy.multiply(self.parameters['weights'], self.previousnormalized), self.parameters['biases'])
 		return self.previousoutput
 
 	def backpropagate(self, outputvector): # ignores dropout
-		self.deltaweights = numpy.add(self.deltaweights, numpy.multiply(outputvector, self.previousnormalized))
-		self.deltabiases = numpy.add(self.deltabiases, outputvector)
-		return numpy.multiply(numpy.divide(self.weights, self.batch), numpy.divide(numpy.subtract(self.batch - 1, numpy.square(self.previousnormalized)), numpy.sqrt(numpy.add(self.epsilon, self.variance))))
+		self.deltaparameters['weights'] = numpy.add(self.deltaparameters['weights'], numpy.multiply(outputvector, self.previousnormalized))
+		self.deltaparameters['biases'] = numpy.add(self.deltaparameters['biases'], outputvector)
+		return numpy.multiply(numpy.divide(self.parameters['weights'], self.batch), numpy.divide(numpy.subtract(self.batch - 1, numpy.square(self.previousnormalized)), numpy.sqrt(numpy.add(Normalizer.epsilon, self.variance))))
 
 	def normalize(self):
 		self.mean = numpy.divide(self.linearsum, self.batch)

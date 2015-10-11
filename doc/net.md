@@ -145,35 +145,17 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			f(x)(i) = exp(x(i)) / sum_over_j(exp(x(j)))
 
-6. **Radial Basis Functions**:
+	* **Threshold**:
 
-			r(i) = (sum_over_j((x(j) - p1(i)(j)) ^ 2) ^ 0.5
+			f(x)(i) = 1.0 if x(i) > 0.0
+					= 0.0 otherwise
 
-	* **Gaussian**:
+	* **StochasticThreshold**:
 
-			f(x)(i) = exp(- r(i) ^ 2 / p2 ^ 2)
+			f(x)(i) = 1.0 if x(i) > random()
+					= 0.0 otherwise
 
-	* **MultiQuadratic**:
-
-			f(x)(i) = (r(i) ^ 2 + p2 ^ 2) ^ p3
-
-	* **InverseMultiQuadratic**:
-
-			f(x)(i) = (r(i) ^ 2 + p2 ^ 2) ^ (-p3)
-
-	* **ThinPlateSpine**:
-
-			f(x)(i) = r(i) ^ 2 * log(r(i))
-
-	* **Cubic**:
-
-			f(x)(i) = r(i) ^ 3
-
-	* **Linear**:
-
-			f(x)(i) = r(i)
-
-7. **Error Functions**:
+6. **Error Functions**:
 
 	* **MeanSquared**:
 
@@ -200,6 +182,87 @@ CrossEntropy Error Function
 
 	* **LogSoftMax**: implements composition of SoftMax Transfer Function and
 NegativeLogLikelihood Error Function
+
+7. **Perceptron**:
+
+			f(x)(i) = 1.0 if g(x)(i) > random()
+					= 0.0 otherwise
+			g(x) = W * x + b
+
+			all modifiers are applicable to it
+
+8. **Hopfield Network**:
+
+			f(x) = W * x where W(i)(j) = W(j)(i)
+							and W(i)(i) = 0
+
+			unsupervised pretraining: Hebbian Learning
+			all modifiers are applicable to it
+
+9. **RestrictedBoltzmannMachine**:
+
+			f(x) = W' * g(x) + b2
+			g(x)(i) = 1 / (1 + exp(-h(x)(i)))
+			h(x) = W * x + b1
+
+			unsupervised pretraining: Contrastive Divergence
+			all modifiers are applicable to it
+
+10. **AutoEncoder**:
+
+			f(x) = W2 * g(x) + b2
+			g(x)(i) = 1 / (1 + exp(-h(x)(i)))
+			h(x) = W1 * x + b1
+
+			unsupervised pretraining: Gradient Descent
+			all modifiers are applicable to it
+
+11. **Radial Basis Functions**:
+
+			r(i) = (sum_over_j((x(j) - p1(i)(j)) ^ 2)) ^ 0.5
+
+			unsupervised pretraining: K Means Clustering
+			all modifiers are applicable to it
+
+	* **GaussianRB**:
+
+			f(x)(i) = exp(- r(i) ^ 2 / p2 ^ 2)
+
+	* **MultiQuadraticRB**:
+
+			f(x)(i) = (r(i) ^ 2 + p2 ^ 2) ^ p3
+
+	* **InverseMultiQuadraticRB**:
+
+			f(x)(i) = (r(i) ^ 2 + p2 ^ 2) ^ (-p3)
+
+	* **ThinPlateSplineRB**:
+
+			f(x)(i) = r(i) ^ 2 * log(r(i))
+
+	* **CubicRB**:
+
+			f(x)(i) = r(i) ^ 3
+
+	* **LinearRB**:
+
+			f(x)(i) = r(i)
+
+12. **Self Organising Maps**:
+
+			f(x)(i) = 1.0 if i = argmin(r(i))
+					= 0.0 otherwise
+
+			unsupervised pretraining: Competitive Learning
+			all modifiers are applicable to it
+
+	* **ManhattanSO**:
+
+			r(i) = sum_over_j(|x(j) - w(i)(j)|)
+
+	* **EuclideanSO**:
+
+			r(i) = sum_over_j((x(j) - w(i)(j)) ^ 2) ^ 0.5
 
 8. **Containers**:
 

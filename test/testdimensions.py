@@ -12,7 +12,7 @@ class DimensionsTestCase(unittest.TestCase):
 	def setUp(self):
 		self.singleparameterclasses = [net.Step, net.Sigmoid, net.HyperbolicTangent, net.HardHyperbolicTangent, net.RectifiedLinearUnit, net.ParametricRectifiedLinearUnit, net.HardShrink, net.SoftShrink, net.SoftMax, net.SoftPlus, net.ShiftScale, net.SoftSign, net.MeanSquared, net.CrossEntropy, net.NegativeLogLikelihood, net.CrossSigmoid, net.LogSoftMax, net.KullbackLeiblerDivergence, net.CosineDistance]
 		self.doubleparameterclasses = [net.Linear, net.Split, net.MergeSum, net.MergeProduct]
-		self.quadrupleparameterclasses = [net.Convolutional, net.MaxPooling, net.MinPooling, net.AveragePooling]
+		self.quadrupleparameterclasses = [net.MaxPooling, net.MinPooling, net.AveragePooling]
 
 	def testsingleparameterclasses(self):
 		for singleparameterclass in self.singleparameterclasses:

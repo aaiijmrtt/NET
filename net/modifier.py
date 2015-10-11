@@ -41,23 +41,27 @@ class Modifier:
 		learningrate = self.alpha
 		if self.decay is not None:
 			learningrate = self.decay.updateweights(learningrate)
-		deltaweights = numpy.multiply(learningrate, self.layer.deltaweights)
-		deltabiases = numpy.multiply(learningrate, self.layer.deltabiases)
+		deltaparameters = dict()
+		for parameter in self.layer.deltaparameters:
+			deltaparameters[parameter] = numpy.multiply(learningrate, self.layer.deltaparameters[parameter])
 		if self.rootmeansquarepropagation is not None:
-			deltaweights, deltabiases = self.rootmeansquarepropagation.updateweights(deltaweights, deltabiases)
+			deltaparameters = self.rootmeansquarepropagation.updateweights(deltaparameters)
 		if self.adaptivegradient is not None:
-			deltaweights, deltabiases = self.adaptivegradient.updateweights(deltaweights, deltabiases)
+			deltaparameters = self.adaptivegradient.updateweights(deltaparameters)
 		if self.adaptivegain is not None:
-			deltaweights, deltabiases = self.adaptivegain.updateweights(deltaweights, deltabiases)
+			deltaparameters = self.adaptivegain.updateweights(deltaparameters)
 		if self.velocity is not None:
-			deltaweights, deltabiases = self.velocity.updateweights(deltaweights, deltabiases)
-		return deltaweights, deltabiases
+			deltaparameters = self.velocity.updateweights(deltaparameters)
+		return deltaparameters
 
 	def cleardeltas(self):
-		deltaweights, deltabiases = numpy.zeros(self.layer.weights.shape, dtype = float), numpy.zeros(self.layer.biases.shape, dtype = float)
 		if self.regularization is not None:
-			deltaweights, deltabiases = self.regularization.cleardeltas()
-		return deltaweights, deltabiases
+			deltaparameters = self.regularization.cleardeltas()
+		else:
+			deltaparameters = dict()
+			for parameter in self.layer.parameters:
+				deltaparameters[parameter] = numpy.zeros(self.layer.parameters[parameter].shape, dtype = float)
+		return deltaparameters
 
 	def feedforward(self, inputvector):
 		if self.dropout is not None:
@@ -65,16 +69,14 @@ class Modifier:
 		return inputvector
 
 	def trainingsetup(self):
-		for attribute in self.__dict__:
-			if attribute in ['decay', 'dropout', 'velocity', 'adaptivegain', 'adaptivegradient', 'rootmeansquarepropagation']:
-				if self.__dict__[attribute] is not None:
-					self.__dict__[attribute].trainingsetup()
+		for attribute in ['decay', 'dropout', 'velocity', 'adaptivegain', 'adaptivegradient', 'rootmeansquarepropagation']:
+			if self.__dict__[attribute] is not None:
+				self.__dict__[attribute].trainingsetup()
 
 	def testingsetup(self):
-		for attribute in self.__dict__:
-			if attribute in ['decay', 'dropout', 'velocity', 'adaptivegain', 'adaptivegradient', 'rootmeansquarepropagation']:
-				if self.__dict__[attribute] is not None:
-					self.__dict__[attribute].testingsetup()
+		for attribute in ['decay', 'dropout', 'velocity', 'adaptivegain', 'adaptivegradient', 'rootmeansquarepropagation']:
+			if self.__dict__[attribute] is not None:
+				self.__dict__[attribute].testingsetup()
 
 class Decay:
 
@@ -89,7 +91,7 @@ class Decay:
 		return learningrate
 
 	def trainingsetup(self):
-		self.__init__(self.modifier)
+		self.__init__(self.modifier, self.eta)
 
 	def testingsetup(self):
 		self.updates = None
@@ -124,29 +126,31 @@ class Regularization:
 		self.regularizer = regularizer if regularizer is not None else Regularization.L2regularizer # default set to L2 regularization
 
 	def cleardeltas(self):
-		return numpy.multiply(self.lamda, self.regularizer(self.modifier.layer.weights)), numpy.multiply(self.lamda, self.regularizer(self.modifier.layer.biases))
+		deltaparameters = dict()
+		for parameter in self.modifier.layer.parameters:
+			deltaparameters[parameter] = numpy.multiply(self.lamda, self.regularizer(self.modifier.layer.parameters[parameter]))
+		return deltaparameters
 
 class Velocity:
 
 	def __init__(self, modifier, gamma = None):
 		self.modifier = modifier
-		self.velocityweights = numpy.zeros(self.modifier.layer.weights.shape, dtype = float)
-		self.velocitybiases = numpy.zeros(self.modifier.layer.biases.shape, dtype = float)
+		self.velocityparameters = dict()
+		for parameter in self.modifier.layer.parameters:
+			self.velocityparameters[parameter] = numpy.zeros(self.modifier.layer.parameters[parameter].shape, dtype = float)
 		self.gamma = gamma if gamma is not None else 0.5 # default set at 0.5
 
-	def updateweights(self, deltaweights, deltabiases):
-		self.velocityweights = numpy.add(numpy.multiply(self.gamma, self.velocityweights), deltaweights)
-		self.velocitybiases = numpy.add(numpy.multiply(self.gamma, self.velocitybiases), deltabiases)
-		deltaweights = numpy.copy(self.velocityweights)
-		deltabiases = numpy.copy(self.velocitybiases)
-		return deltaweights, deltabiases
+	def updateweights(self, deltaparameters):
+		for parameter in deltaparameters:
+			self.velocityparameters[parameter] = numpy.add(numpy.multiply(self.gamma, self.velocityparameters[parameter]), deltaparameters[parameter])
+			deltaparameters[parameter] = numpy.copy(self.velocityparameters[parameter])
+		return deltaparameters
 
 	def trainingsetup(self):
 		self.__init__(self.modifier, self.gamma)
 
 	def testingsetup(self):
-		self.velocityweights = None
-		self.velocitybiases = None
+		self.velocityparameters = None
 
 class AdaptiveGradient:
 
@@ -154,22 +158,21 @@ class AdaptiveGradient:
 
 	def __init__(self, modifier):
 		self.modifier = modifier
-		self.sumsquareweights = numpy.zeros(self.modifier.layer.weights.shape, dtype = float)
-		self.sumsquarebiases = numpy.zeros(self.modifier.layer.biases.shape, dtype = float)
+		self.sumsquareparameters = dict()
+		for parameter in self.modifier.layer.parameters:
+			self.sumsquareparameters[parameter] = numpy.zeros(self.modifier.layer.parameters[parameter].shape, dtype = float)
 
-	def updateweights(self, deltaweights, deltabiases):
-		self.sumsquareweights = numpy.add(self.sumsquareweights, numpy.square(self.modifier.layer.deltaweights))
-		self.sumsquarebiases = numpy.add(self.sumsquarebiases, numpy.square(self.modifier.layer.deltabiases))
-		deltaweights = numpy.divide(deltaweights, numpy.sqrt(numpy.add(AdaptiveGradient.epsilon, self.sumsquareweights)))
-		deltabiases = numpy.divide(deltabiases, numpy.sqrt(numpy.add(AdaptiveGradient.epsilon, self.sumsquarebiases)))
-		return deltaweights, deltabiases
+	def updateweights(self, deltaparameters):
+		for parameter in deltaparameters:
+			self.sumsquareparameters[parameter] = numpy.add(self.sumsquareparameters[parameter], numpy.square(self.modifier.layer.deltaparameters[parameter]))
+			deltaparameters[parameter] = numpy.divide(deltaparameters[parameter], numpy.sqrt(numpy.add(AdaptiveGradient.epsilon, self.sumsquareparameters[parameter])))
+		return deltaparameters
 
 	def trainingsetup(self):
 		self.__init__(self.modifier)
 
 	def testingsetup(self):
-		self.sumsquareweights = None
-		self.sumsquarebiases = None
+		self.sumsquareparameters = None
 
 class AdaptiveGain:
 
@@ -180,20 +183,18 @@ class AdaptiveGain:
 		self.minimum = minimum if minimum is not None else 0.01 # default set to 0.01
 		self.gainadapter = numpy.vectorize(lambda x, y, z: z + self.tau if x * y > 0.0 else z * (1.0 - self.tau))
 		self.gainclipper = numpy.vectorize(lambda x: self.minimum if x < self.minimum else self.maximum if self.maximum < x else x)
-		self.gainweights = numpy.ones(self.modifier.layer.weights.shape, dtype = float)
-		self.gainbiases = numpy.ones(self.modifier.layer.biases.shape, dtype = float)
-		self.olddeltaweights = numpy.copy(self.modifier.layer.deltaweights)
-		self.olddeltabiases = numpy.copy(self.modifier.layer.deltabiases)
+		self.gainparameters = dict()
+		self.olddeltaparameters = dict()
+		for parameter in self.modifier.layer.parameters:
+			self.gainparameters[parameter] = numpy.ones(self.modifier.layer.parameters[parameter].shape, dtype = float)
+			self.olddeltaparameters[parameter] = numpy.copy(self.modifier.layer.deltaparameters[parameter])
 
-
-	def updateweights(self, deltaweights, deltabiases):
-		self.gainweights = self.gainclipper(self.gainadapter(self.olddeltaweights, self.modifier.layer.deltaweights, self.gainweights))
-		self.gainbiases = self.gainclipper(self.gainadapter(self.olddeltabiases, self.modifier.layer.deltabiases, self.gainbiases))
-		self.olddeltaweights = numpy.copy(self.modifier.layer.deltaweights)
-		self.oldbiases = numpy.copy(self.modifier.layer.deltabiases)
-		deltaweights = numpy.multiply(self.gainweights, deltaweights)
-		deltabiases = numpy.multiply(self.gainbiases, deltabiases)
-		return deltaweights, deltabiases
+	def updateweights(self, deltaparameters):
+		for parameter in deltaparameters:
+			self.gainparameters[parameter] = self.gainclipper(self.gainadapter(self.olddeltaparameters[parameter], self.modifier.layer.deltaparameters[parameter], self.gainparameters[parameter]))
+			self.olddeltaparameters[parameter] = numpy.copy(self.modifier.layer.deltaparameters[parameter])
+			deltaparameters[parameter] = numpy.multiply(self.gainparameters[parameter], deltaparameters[parameter])
+		return deltaparameters
 
 	def trainingsetup(self):
 		self.__init__(self.modifier, self.tau, self.maximum, self.minimum)
@@ -201,10 +202,8 @@ class AdaptiveGain:
 	def testingsetup(self):
 		self.gainadapter = None
 		self.gainclipper = None
-		self.gainweights = None
-		self.gainbiases = None
-		self.olddeltaweights = None
-		self.olddeltabiases = None
+		self.gainparameters = None
+		self.olddeltaparameters = None
 
 class RootMeanSquarePropagation:
 
@@ -213,19 +212,18 @@ class RootMeanSquarePropagation:
 	def __init__(self, modifier, meu = None):
 		self.modifier = modifier
 		self.meu = meu if meu is not None else 0.9 # default set to 0.9
-		self.meansquareweights = numpy.zeros(self.modifier.layer.weights.shape, dtype = float)
-		self.meansquarebiases = numpy.zeros(self.modifier.layer.biases.shape, dtype = float)
+		self.meansquareparameters = dict()
+		for parameter in self.modifier.layer.parameters:
+			self.meansquareparameters[parameter] = numpy.zeros(self.modifier.layer.parameters[parameter].shape, dtype = float)
 
-	def updateweights(self, deltaweights, deltabiases):
-		self.meansquareweights = numpy.add(numpy.multiply(self.meu, self.meansquareweights), numpy.multiply(1.0 - self.meu, numpy.square(self.modifier.layer.deltaweights)))
-		self.meansquarebiases = numpy.add(numpy.multiply(self.meu, self.meansquarebiases), numpy.multiply(1.0 - self.meu, numpy.square(self.modifier.layer.deltabiases)))
-		deltaweights = numpy.divide(deltaweights, numpy.sqrt(numpy.add(RootMeanSquarePropagation.epsilon, self.meansquareweights)))
-		deltabiases = numpy.divide(deltabiases, numpy.sqrt(numpy.add(RootMeanSquarePropagation.epsilon, self.meansquarebiases)))
-		return deltaweights, deltabiases
+	def updateweights(self, deltaparameters):
+		for parameter in deltaparameters:
+			self.meansquareparameters[parameter] = numpy.add(numpy.multiply(self.meu, self.meansquareparameters[parameter]), numpy.multiply(1.0 - self.meu, numpy.square(self.modifier.layer.deltaparameters[parameter])))
+			deltaparameters[parameter] = numpy.divide(deltaparameters[parameter], numpy.sqrt(numpy.add(RootMeanSquarePropagation.epsilon, self.meansquareparameters[parameter])))
+		return deltaparameters
 
 	def trainingsetup(self):
 		self.__init__(self.modifier, self.meu)
 
 	def testingsetup(self):
-		self.meansquareweights = None
-		self.meansquarebiases = None
+		self.meansquareparameters = None

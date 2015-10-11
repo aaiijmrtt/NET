@@ -1,4 +1,5 @@
-import numpy, univariate
+import numpy
+from . import univariate
 
 class Beta:
 

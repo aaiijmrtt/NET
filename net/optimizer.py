@@ -1,4 +1,5 @@
-import numpy, copy, error
+import numpy, copy
+from . import error
 
 class Optimizer:
 
@@ -7,7 +8,7 @@ class Optimizer:
 		self.trainingset = trainingset
 		self.validationset = validationset if validationset is not None else testingset # default set to testing set
 		self.testingset = testingset
-		self.criterion = criterion if criterion is not None else error.MeanSquared.compute # default set to half mean squared
+		self.criterion = criterion if criterion is not None else error.MeanSquared # default set to half mean squared
 		self.error = None
 
 	def train(self, batch = 1, iterations = 1):
@@ -29,8 +30,8 @@ class Optimizer:
 		self.net.testingsetup()
 		self.error = numpy.zeros((self.net.outputs, 1), dtype = float)
 		for inputvector, outputvector in self.validationset:
-			self.error = numpy.add(self.error, self.criterion(self.net.feedforward(inputvector), outputvector))
-		self.error = numpy.divide(self.error, len(self.testingset))
+			self.error = numpy.add(self.error, self.criterion.compute(self.net.feedforward(inputvector), outputvector))
+		self.error = numpy.divide(self.error, len(self.validationset))
 		return self.error
 
 	def test(self):
@@ -38,7 +39,7 @@ class Optimizer:
 		self.net.testingsetup()
 		self.error = numpy.zeros((self.net.outputs, 1), dtype = float)
 		for inputvector, outputvector in self.testingset:
-			self.error = numpy.add(self.error, self.criterion(self.net.feedforward(inputvector), outputvector))
+			self.error = numpy.add(self.error, self.criterion.compute(self.net.feedforward(inputvector), outputvector))
 		self.error = numpy.divide(self.error, len(self.testingset))
 		return self.error
 

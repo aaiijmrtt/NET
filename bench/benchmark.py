@@ -1,4 +1,5 @@
-import numpy, net.layer
+import numpy
+from .. import net
 
 class Benchmark(net.layer.Layer):
 

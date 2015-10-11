@@ -18,6 +18,20 @@ class Transfer:
 	def backpropagate(self, outputvector):
 		return numpy.multiply(outputvector, self.derivative(self.previousoutput))
 
+class Threshold(Transfer):
+
+	def __init__(self, inputs):
+		Transfer.__init__(self, inputs)
+		self.function = numpy.vectorize(lambda x: 1.0 if x > 0.0 else 0.0)
+		self.derivative = numpy.vectorize(lambda x: 1.0) # invisible during backpropagation
+
+class StochasticThreshold(Transfer):
+
+	def __init__(self, inputs):
+		Transfer.__init__(self, inputs)
+		self.function = numpy.vectorize(lambda x: 1.0 if x > numpy.random.random() else 0.0)
+		self.derivative = numpy.vectorize(lambda x: 1.0) # invisible during backpropagation
+
 class Sigmoid(Transfer):
 
 	def __init__(self, inputs):
@@ -84,7 +98,7 @@ class SoftMax(Transfer):
 
 	def backpropagate(self, outputvector):
 		had = numpy.multiply(self.previousoutput, outputvector)
-		dot = numpy.dot(numpy.dot(self.previousoutput, self.previousoutput.transpose()), outputvector)
+		dot = numpy.dot(numpy.dot(self.previousoutput, numpy.transpose(self.previousoutput)), outputvector)
 		return numpy.subtract(had, dot)
 
 class SoftPlus(Transfer):

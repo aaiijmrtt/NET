@@ -2,6 +2,9 @@ import numpy
 
 class Container:
 
+	listoflayers = ['Linear', 'Normalizer', 'Convolutional', 'Perceptron', 'AutoEncoder', 'HopfieldNetwork', 'GaussianRB', 'MultiQuadraticRB', 'InverseMultiQuadraticRB', 'ThinPlateSplineRB', 'CubicRB', 'LinearRB', 'RestrictedBoltzmann', 'ManhattanSO', 'EuclideanSquaredSO']
+	listofcontainers = ['Series', 'Parallel', 'Recurrent']
+
 	def __init__(self):
 		self.layers = list()
 		self.inputs = None
@@ -11,82 +14,82 @@ class Container:
 
 	def accumulate(self, inputvector):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Normalizer'] + Container.listofcontainers:
 				layer.accumulate(inputvector)
 
 	def cleardeltas(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
 				layer.cleardeltas()
 
 	def updateweights(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
 				layer.updateweights()
 
 	def normalize(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Normalizer'] + Container.listofcontainers:
 				layer.normalize()
 
 	def accumulatingsetup(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Normalizer', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in ['Normalizer'] + Container.listofcontainers:
 				layer.accumulatingsetup()
 
 	def timingsetup(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in Container.listofcontainers:
 				layer.timingsetup()
 
 	def trainingsetup(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
 				layer.trainingsetup()
 
 	def testingsetup(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
 				layer.trainingsetup()
 
 	def applylearningrate(self, alpha = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
 				layer.applylearningrate(alpha)
 
 	def applydecayrate(self, eta = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
 				layer.applydecayrate(eta)
 
 	def applyvelocity(self, gamma = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
 				layer.applyvelocity(gamma)
 
 	def applyregularization(self, lamda = None, regularizer = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
 				layer.applyregularization(lamda, regularizer)
 
 	def applydropout(self, probability = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
 				layer.applydropout(probability)
 
 	def applyadaptivegain(self, tau = None, maximum = None, minimum = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
 				layer.applyadaptivegain(tau, maximum, minimum)
 
 	def applyrootmeansquarepropagation(self, meu = None):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
 				layer.applyrootmeansquarepropagation(meu)
 
 	def applyadaptivegradient(self):
 		for layer in self.layers:
-			if layer.__class__.__name__ in ['Linear', 'Normalizer', 'Convolutional', 'Series', 'Parallel', 'Recurrent']:
+			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
 				layer.applyadaptivegradient()
 
 class Series(Container):

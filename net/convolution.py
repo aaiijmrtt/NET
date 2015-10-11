@@ -1,4 +1,5 @@
-import numpy, layer
+import numpy
+from . import layer
 
 class Convolution:
 
@@ -41,8 +42,9 @@ class Convolutional(layer.Layer, Convolution):
 		Convolution.__init__(self, height, width, depth, extent, stride, padding)
 		layer.Layer.__init__(self, self.height * self.width * self.depth, alpha)
 		self.outputs = self.rows * self.columns
-		self.weights = numpy.ones((1, self.extent * self.extent * self.depth), dtype = float)
-		self.biases = numpy.ones((1, 1), dtype = float)
+		self.parameters = dict()
+		self.parameters['weights'] = numpy.ones((1, self.extent * self.extent * self.depth), dtype = float)
+		self.parameters['biases'] = numpy.ones((1, 1), dtype = float)
 		self.cleardeltas()
 
 	def feedforward(self, inputvector): # ignores dropout
@@ -50,16 +52,16 @@ class Convolutional(layer.Layer, Convolution):
 		self.previousoutput = numpy.empty((self.outputs, 1), dtype = float)
 		for row in range(self.rows):
 			for column in range(self.columns):
-				self.previousoutput[row * self.columns + column][0] = numpy.add(numpy.dot(self.weights, self.convolute(row, column, self.previousinput)), self.biases)
+				self.previousoutput[row * self.columns + column][0] = numpy.add(numpy.dot(self.parameters['weights'], self.convolute(row, column, self.previousinput)), self.parameters['biases'])
 		return self.previousoutput
 
 	def backpropagate(self, outputvector): # ignores dropout
 		backvector = numpy.zeros((self.inputs, 1), dtype = float)
 		for row in range(self.rows):
 			for column in range(self.columns):
-				self.deltaweights = numpy.add(self.deltaweights, numpy.multiply(outputvector[row * self.columns + column][0], self.convolute(row, column, self.previousinput).transpose()))
-				self.deltabiases = numpy.add(outputvector[row * self.columns + column][0], self.deltabiases)
-				backvector = self.unconvolute(row, column, numpy.multiply(outputvector[row * self.columns + column][0], self.weights.transpose()), backvector)
+				self.deltaparameters['weights'] = numpy.add(self.deltaparameters['weights'], numpy.multiply(outputvector[row * self.columns + column][0], self.convolute(row, column, numpy.transpose(self.previousinput))))
+				self.deltaparameters['biases'] = numpy.add(outputvector[row * self.columns + column][0], self.deltaparameters['biases'])
+				backvector = self.unconvolute(row, column, numpy.multiply(outputvector[row * self.columns + column][0], numpy.transpose(self.parameters['weights'])), backvector)
 		return backvector
 
 class Pooling(Convolution):
