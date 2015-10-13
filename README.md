@@ -10,6 +10,7 @@ neural network architectures quick.
 
 * Requires Python.
 * Requires Numpy.
+* Requires MatplotLib.
 
 ##Sample Code
 

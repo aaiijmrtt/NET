@@ -1,9 +1,25 @@
+'''
+	Module containing Self Organising Feature Maps.
+	Classes embody Parametric Non Linear Layers,
+	used to learn low dimensional representations of data.
+'''
 import numpy
 from . import layer, transfer, error
 
 class RestrictedBoltzmann(layer.Layer):
-
+	'''
+		Restricted Boltzmann Machine Layer
+		Mathematically, f(x) = W' * g(x) + b2
+						g(x)(i) = 1 / (1 + exp(-h(x)(i)))
+						h(x) = W * x + b1
+	'''
 	def __init__(self, inputs, hiddens, alpha = None, nonlinearity = None):
+		'''
+			Constructor
+			: param inputs : dimension of input feature space
+			: param outputs : dimension of output feature space
+			: param alpha : learning rate constant hyperparameter
+		'''
 		layer.Layer.__init__(self, inputs, inputs, alpha)
 		self.hiddens = hiddens
 		self.previoushidden = None
@@ -16,18 +32,36 @@ class RestrictedBoltzmann(layer.Layer):
 		self.cleardeltas()
 
 	def feedforward(self, inputvector):
+		'''
+			Method to feedforward a vector through the layer
+			: param inputvector : vector in input feature space
+			: returns : fedforward vector mapped to output feature space
+		'''
 		self.previousinput = self.modifier.feedforward(inputvector)
 		self.previoushidden = self.transferin.feedforward(numpy.add(numpy.dot(self.parameters['weightsin'], self.previousinput), self.parameters['biasesin']))
 		self.previousoutput = self.previoushidden
 		return self.previousoutput
 
 	def backpropagate(self, outputvector):
+		'''
+			Method to backpropagate derivatives through the layer
+			: param outputvector : derivative vector in output feature space
+			: returns : backpropagated vector mapped to input feature space
+		'''
 		outputvector = self.transferin.backpropagate(outputvector)
 		self.deltaparameters['weightsin'] = numpy.add(self.deltaparameters['weightsin'], numpy.dot(outputvector, numpy.transpose(self.previousinput)))
 		self.deltaparameters['biasesin'] = numpy.add(self.deltaparameters['biasesin'], outputvector)
 		return numpy.dot(numpy.transpose(self.parameters['weightsin']), outputvector)
 
-	def pretrain(self, trainingset, batch = 1, iterations = 1, criterion = None): # Contrastive Divergence
+	def pretrain(self, trainingset, batch = 1, iterations = 1, criterion = None):
+		'''
+			Method to pretrain parameters using Contrastive Divergence
+			: param trainingset : unsupervised training set
+			: param batch : training minibatch size
+			: param iterations : iteration threshold for termination
+			: param criterion : criterion used to quantify reconstruction error
+			: returns : elementwise reconstruction error on termination
+		'''
 		def _feedforward(self, inputvector):
 			self.previousinput = self.modifier.feedforward(inputvector)
 			self.previoushidden = self.transferin.feedforward(numpy.add(numpy.dot(self.parameters['weightsin'], self.previousinput), self.parameters['biasesin']))

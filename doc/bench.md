@@ -35,7 +35,7 @@
 
 	* **Curve**:
 
-			a piecewise univariate curve defined over intervals
+			f(x) = fi(x) if i1 <= x <= i2
 
 3.	**Multivariate Functions**:
 
@@ -57,15 +57,33 @@
 
 4. **Noise Functions**:
 
-	* **Probability Distributions**:
+	* **Beta Probability Distribution**:
 
-			* Beta
-			* Bernoulli
-			* Gamma
-			* Geometric
-			* Gaussian
-			* Poisson
-			* Uniform
+			p(x) = x ^ (p1 - 1) * (1 - x) ^ (p2 - 1) / integral_(0, 1)((x ^ (p1 - 1) * (1 - x) ^ (p2 - 1)) dx)
+
+	* **Bernoulli Probability Distribution**:
+
+			p(x) = C(p1, x) * p2 ^ x * (1 - p2) ^ (p1 - x)
+
+	* **Gamma Probability Distribution**:
+
+			p(x) = x ^ (p1 - 1) * exp(-x / p2) / ((p2 ^ p1) * Gamma(p1))
+
+	* **Geometric Probability Distribution**:
+	
+			p(x) = p1 * (1 - p1) ^ (p2 - 1)
+
+	* **Gaussian Probability Distribution**:
+
+			p(x) = exp(-(x - p2) ^ 2 / (2 * p1 ^ 2)) / (2 * pi * p1 ^ 2) ^ 0.5
+
+	* **Poisson Probability Distribution**:
+
+			p(x) = p1 ^ x * exp(-x) / x!
+
+	* **Uniform Probability Distribution**:
+
+			p(x) = 1 / (p1 - p2)
 
 	* **NoisyUnivariate**:
 

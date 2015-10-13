@@ -56,6 +56,12 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 					(1 - p1) * g(t) otherwise
 			w(t + 1) = w(t) - p2 * g(t) * dE(t) / dw(t)
 
+	* **ResilientPropagation**:
+
+			g(t + 1) = g(t) + p1 if (dE(t) / dw(t)) * (dE(t - 1) / dw(t - 1)) > 0
+						(1 - p1) * g(t) otherwise
+			w(t + 1) = w(t) - p2 * g(t) * sign(dE(t) / dw(t))
+
 	* **AdaptiveGradient**:
 
 			sw(t + 1) = sw(t) + (dE(t) / dw(t)) ^ 2
@@ -68,7 +74,7 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 	* **Regularization**:
 
-			E = E + f(w)
+			E = E + p * f(w)
 
 	* **Dropout**:
 
@@ -177,11 +183,15 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			f(y, o)(i) = - o(i) * y(i) / (sum_over_j(o(j) ^ 2) * sum_over_j(y(j) ^ 2)) ^ 0.5
 
-	* **CrossSigmoid**: implements composition of Sigmoid Transfer Function and
-CrossEntropy Error Function
+	* **CrossSigmoid**:
 
-	* **LogSoftMax**: implements composition of SoftMax Transfer Function and
-NegativeLogLikelihood Error Function
+			f(y, o)(i) = - (o(i) * log(g(y)(i)) + (1 - o(i)) * log(1 - g(y)(i)))
+			g(y)(i) = 1 / (1 + exp(-y(i)))
+
+	* **LogSoftMax**:
+
+			f(y, o)(i) = - o(i) * log(g(y)(i))
+			g(y)(i) = exp(y(i)) / sum_over_j(exp(y(j)))
 
 7. **Perceptron**:
 
@@ -264,7 +274,7 @@ NegativeLogLikelihood Error Function
 
 			r(i) = sum_over_j((x(j) - w(i)(j)) ^ 2) ^ 0.5
 
-8. **Containers**:
+13. **Containers**:
 
 	* **Series**:
 
@@ -274,9 +284,11 @@ NegativeLogLikelihood Error Function
 
 			f([x1, x2 ... xn]) = [f1(x1), f2(x2) ... fn(xn)]
 
-	* **Recurrent**: implements time recurrence
+	* **Recurrent**:
 
-9. **Optimizers**:
+			F([h(t-1), x(t)]) = [h(t), f(x(t))]
+
+14. **Optimizers**:
 
 	* **Optimizer**: simplifies training and testing
 
