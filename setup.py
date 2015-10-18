@@ -20,7 +20,7 @@ distutils.core.setup(name = 'net',
 		'Programming Language :: Python :: 2',
 		'Programming Language :: Python :: 3'
 	],
-	packages = ['net'],
-	install_requires = ['numpy'],
+	packages = ['net', 'bench', 'data'],
+	install_requires = ['numpy', 'matplotlib'],
 	test_suite = ['test']
 )

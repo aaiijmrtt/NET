@@ -4,7 +4,7 @@
 	used for benchmarking optimization algorithms.
 '''
 import numpy
-from .. import net
+import net
 
 class Benchmark(net.layer.Layer):
 	'''

@@ -1,4 +1,4 @@
-#NET
+# NET
 
 **Neural Networks in Python**
 
@@ -12,64 +12,24 @@ neural network architectures quick.
 * Requires Numpy.
 * Requires MatplotLib.
 
-##Sample Code
+## Overview
 
-1. **Putting Together a Simple Network**:
+* **net**: this package contains all the modules you will need to create neural
+networks quickly. Because that is what you wanted.
 
-		# Input -> Linear -> HyperbolicTangent -> Linear -> MeanSquared (Error) -> Output
+* **bench**: this package contains tools used for benchmarking new algorithms.
+Because you can do it better.
 
-		import net
+* **data**: this package contains scripts providing access to common datasets.
+Because no one wants to have to go looking for them anyway.
 
-		n_input = 2
-		n_hidden = 6
-		n_output = 1
+* **tutor**: this folder contains tutorials written to help you get started.
+Because the first time is always the hardest.
 
-		myseriesnet = net.Series()
+* **doc**: this folder contains the documentation of the all modules we have
+implemented. These are the grizzly mathematical details your professor warned
+you about.
 
-		myseriesnet.addlayer(net.Linear(n_input, n_hidden))
-		myseriesnet.addlayer(net.HyperbolicTangent(n_hidden))
-		myseriesnet.addlayer(net.Linear(n_hidden, n_output))
-		myseriesnet.addlayer(net.MeanSquared(n_output))
-
-		myseriesnet.applyvelocity(0.9)
-		myseriesnet.applylearningrate(0.025)
-
-2. **Creating a Toy Dataset**:
-
-		# f(0, 0) = 0
-		# f(0, 1) = 1
-		# f(1, 0) = 1
-		# f(1, 1) = 0
-
-		import numpy
-
-		mytrainingset = list()
-
-		for i in range(500):
-
-			x = numpy.zeros((n_input, 1), dtype = float)
-			y = numpy.zeros((n_output, 1), dtype = float)
-
-			if i % 4 == 0:
-				mytrainingset.append((x, y))
-			elif i % 4 == 1:
-				x[1][0] = 1.0
-				y[0][0] = 1.0
-				mytrainingset.append((x, y))
-			elif i % 4 == 2:
-				x[0][0] = 1.0
-				y[0][0] = 1.0
-				mytrainingset.append((x, y))
-			else:
-				x[0][0] = 1.0
-				x[1][0] = 1.0
-				mytrainingset.append((x, y))
-
-		mytestingset = mytrainingset
-
-3. **Training and Testing the Network**:
-
-		myoptimizer = net.Optimizer(myseriesnet, mytrainingset, mytestingset)
-		myoptimizer.train()
-
-		print "error:", myoptimizer.test()
+* **test**: this folder contains tests we use to make sure everything is
+working the way it should. Because things do not always work the way they
+should.

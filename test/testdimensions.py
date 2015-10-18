@@ -1,7 +1,5 @@
-import sys, os
-sys.path.append(os.path.abspath('..'))
-
-import net, numpy, unittest
+import sys, os, numpy, unittest
+import net
 
 class DimensionsTestCase(unittest.TestCase):
 
