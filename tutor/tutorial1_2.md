@@ -1,4 +1,6 @@
-# Adding Layers
+# Getting Started
+
+## Adding Multiple Layers
 
 In this tutorial, we show you the simplest way to create multiple layer
 neural networks using the net package. As before, we import all the packages we

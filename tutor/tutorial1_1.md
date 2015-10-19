@@ -1,5 +1,7 @@
 # Getting Started
 
+## Creating Neural Networks
+
 In this tutorial, we show you the simplest way to create a single layer
 perceptron using the net package. First, we import all the packages we need.
 

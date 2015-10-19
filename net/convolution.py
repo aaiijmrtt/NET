@@ -113,7 +113,7 @@ class Convolutional(layer.Layer, Convolution):
 		backvector = numpy.zeros((self.inputs, 1), dtype = float)
 		for row in range(self.rows):
 			for column in range(self.columns):
-				self.deltaparameters['weights'] = numpy.add(self.deltaparameters['weights'], numpy.multiply(outputvector[row * self.columns + column][0], self.convolute(row, column, numpy.transpose(self.previousinput))))
+				self.deltaparameters['weights'] = numpy.add(self.deltaparameters['weights'], numpy.multiply(outputvector[row * self.columns + column][0], numpy.transpose(self.convolute(row, column, self.previousinput))))
 				self.deltaparameters['biases'] = numpy.add(outputvector[row * self.columns + column][0], self.deltaparameters['biases'])
 				backvector = self.unconvolute(row, column, numpy.multiply(outputvector[row * self.columns + column][0], numpy.transpose(self.parameters['weights'])), backvector)
 		return backvector

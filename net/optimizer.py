@@ -45,29 +45,43 @@ class Optimizer:
 				self.net.feedforward(self.trainingset[j][0])
 				self.net.backpropagate(self.trainingset[j][1])
 
-	def validate(self):
+	def validate(self, classification = None):
 		'''
 			Method to validate training
+			: param classification : parameter to control whether task is classification
 			: returns : vectorized error
 		'''
+		classification = classification if classification is not None else False
 		self.net.timingsetup()
 		self.net.testingsetup()
-		self.error = numpy.zeros((self.net.outputs, 1), dtype = float)
-		for inputvector, outputvector in self.validationset:
-			self.error = numpy.add(self.error, self.criterion(self.net.feedforward(inputvector), outputvector))
+		if classification:
+			self.error = numpy.array([[float(len(self.validationset))]])
+			for inputvector, outputvector in self.validationset:
+				self.error[0][0] -= outputvector[numpy.argmax(self.net.feedforward(inputvector))][0]
+		else:
+			self.error = numpy.zeros((self.net.outputs, 1), dtype = float)
+			for inputvector, outputvector in self.validationset:
+				self.error = numpy.add(self.error, self.criterion(self.net.feedforward(inputvector), outputvector))
 		self.error = numpy.divide(self.error, len(self.validationset))
 		return self.error
 
-	def test(self):
+	def test(self, classification = None):
 		'''
 			Method to test training
+			: param classification : parameter to control whether task is classification
 			: returns : vectorized error
 		'''
+		classification = classification if classification is not None else False
 		self.net.timingsetup()
 		self.net.testingsetup()
-		self.error = numpy.zeros((self.net.outputs, 1), dtype = float)
-		for inputvector, outputvector in self.testingset:
-			self.error = numpy.add(self.error, self.criterion(self.net.feedforward(inputvector), outputvector))
+		if classification:
+			self.error = numpy.array([[float(len(self.testingset))]])
+			for inputvector, outputvector in self.testingset:
+				self.error[0][0] -= outputvector[numpy.argmax(self.net.feedforward(inputvector))][0]
+		else:
+			self.error = numpy.zeros((self.net.outputs, 1), dtype = float)
+			for inputvector, outputvector in self.testingset:
+				self.error = numpy.add(self.error, self.criterion(self.net.feedforward(inputvector), outputvector))
 		self.error = numpy.divide(self.error, len(self.testingset))
 		return self.error
 

@@ -2,17 +2,7 @@
 	Module containing Logical Function Generators.
 '''
 import numpy, random
-
-def binaryvector(integer, size):
-	'''
-		Method to convert integer to binary vector
-		: param integer : integer to be converted
-		: param size : length of binary vector
-		: returns : binary vector
-	'''
-	binary = [int(x) for x in bin(integer)[2: ]]
-	binary = [0] * (size - len(binary)) + binary
-	return numpy.reshape(binary, (size, 1))
+from . import tools
 
 def datasetand(size = None, variables = None, shuffle = None):
 	'''
@@ -28,7 +18,7 @@ def datasetand(size = None, variables = None, shuffle = None):
 	count = 2 ** variables
 	dataset = list()
 	for i in range(size):
-		x = binaryvector(i % count, variables)
+		x = tools.binaryvector(i % count, variables)
 		y = numpy.empty((1, 1))
 		y[0][0] = 1.0 if numpy.sum(x) == variables else 0.0
 		dataset.append((x, y))
@@ -50,7 +40,7 @@ def datasetor(size = None, variables = None, shuffle = None):
 	count = 2 ** variables
 	dataset = list()
 	for i in range(size):
-		x = binaryvector(i % count, variables)
+		x = tools.binaryvector(i % count, variables)
 		y = numpy.empty((1, 1))
 		y[0][0] = 1.0 if numpy.sum(x) > 0.0 else 0.0
 		dataset.append((x, y))
@@ -72,7 +62,7 @@ def datasetnand(size = None, variables = None, shuffle = None):
 	count = 2 ** variables
 	dataset = list()
 	for i in range(size):
-		x = binaryvector(i % count, variables)
+		x = tools.binaryvector(i % count, variables)
 		y = numpy.empty((1, 1))
 		y[0][0] = 1.0 if numpy.sum(x) < variables else 0.0
 		dataset.append((x, y))
@@ -94,7 +84,7 @@ def datasetnor(size = None, variables = None, shuffle = None):
 	count = 2 ** variables
 	dataset = list()
 	for i in range(size):
-		x = binaryvector(i % count, variables)
+		x = tools.binaryvector(i % count, variables)
 		y = numpy.empty((1, 1))
 		y[0][0] = 1.0 if numpy.sum(x) == 0.0 else 0.0
 		dataset.append((x, y))
@@ -116,7 +106,7 @@ def datasetxor(size = None, variables = None, shuffle = None):
 	count = 2 ** variables
 	dataset = list()
 	for i in range(size):
-		x = binaryvector(i % count, variables)
+		x = tools.binaryvector(i % count, variables)
 		y = numpy.empty((1, 1))
 		y[0][0] = 1.0 if numpy.sum(x) % 2.0 == 0.0 else 0.0
 		dataset.append((x, y))

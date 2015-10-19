@@ -1,4 +1,6 @@
-# Training Networks
+# Getting Started
+
+## Training Neural Networks
 
 In this tutorial, we show you different ways to optimize the training of a
 neural network using the net package. The initial setup remains the same as in

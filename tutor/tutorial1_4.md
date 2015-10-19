@@ -1,4 +1,6 @@
-# Trying Different Layers
+# Getting Started
+
+## Trying Different Layers
 
 In this tutorial, we show you some of the different neural network layers that
 you can experiment with using the net package. The initial setup remains the
@@ -64,4 +66,6 @@ us try adding a fourth threshold layer.
 		mynet.applylearningrate(0.15)
 		mynet.applyvelocity(0.99)
 
-You should get an error of 0.0. Now that is quite something.
+You should get an error of 0.0. Now that is quite something. So far we have
+dealt only with artificial datasets. In the next tutorial, we shall deal with
+real world datasets.
