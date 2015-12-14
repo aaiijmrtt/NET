@@ -1,3 +1,3 @@
-import logical
-import classification
-import regression
+from . import logical
+from . import classification
+from . import regression

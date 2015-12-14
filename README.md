@@ -9,8 +9,10 @@ neural network architectures quick.
 **Note**:
 
 * Requires Python.
-* Requires Numpy.
+* Requires NumPy.
 * Requires MatplotLib.
+* Requires PyOpenCL.
+* Requires DisPy.
 
 ## Overview
 

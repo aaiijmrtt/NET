@@ -19,8 +19,8 @@ class Container:
 		self.layers = list()
 		self.inputs = None
 		self.outputs = None
-		self.previousinput = None
-		self.previousoutput = None
+		self.previousinput = list()
+		self.previousoutput = list()
 
 	def accumulate(self, inputvector):
 		'''
@@ -68,7 +68,7 @@ class Container:
 			Method to prepare layer for time recurrence
 		'''
 		for layer in self.layers:
-			if layer.__class__.__name__ in Container.listofcontainers:
+			if layer.__class__.__name__ in ['LongShortTermMemory'] + Container.listofcontainers:
 				layer.timingsetup()
 
 	def trainingsetup(self):
@@ -172,6 +172,14 @@ class Container:
 			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
 				layer.applyresilientpropagation(tau, maximum, minimum)
 
+	def applyquickpropagation(self):
+		'''
+			Method to apply quick propagation gradient descent optimization
+		'''
+		for layer in self.layers:
+			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
+				layer.applyquickpropagation()
+
 class Series(Container):
 	'''
 		Series Container
@@ -199,11 +207,11 @@ class Series(Container):
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput = inputvector
-		self.previousoutput = self.previousinput
+		self.previousinput.append(inputvector)
+		self.previousoutput.append(self.previousinput[-1])
 		for layer in self.layers:
-			self.previousoutput = layer.feedforward(self.previousoutput)
-		return self.previousoutput
+			self.previousoutput[-1] = layer.feedforward(self.previousoutput[-1])
+		return self.previousoutput[-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -211,6 +219,8 @@ class Series(Container):
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
+		self.previousoutput.pop()
+		self.previousinput.pop()
 		for layer in reversed(self.layers):
 			outputvector = layer.backpropagate(outputvector)
 		return outputvector
@@ -247,12 +257,12 @@ class Parallel(Container):
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput = inputvector
+		self.previousinput.append(inputvector)
 		layeroutputs = list()
-		for layer, layerinput in zip(self.layers, numpy.split(self.previousinput, self.inputdimensions[1: -1])):
+		for layer, layerinput in zip(self.layers, numpy.split(self.previousinput[-1], self.inputdimensions[1: -1])):
 			layeroutputs.append(layer.feedforward(layerinput))
-		self.previousoutput = numpy.concatenate(layeroutputs)
-		return self.previousoutput
+		self.previousoutput.append(numpy.concatenate(layeroutputs))
+		return self.previousoutput[-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -260,6 +270,8 @@ class Parallel(Container):
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
+		self.previousoutput.pop()
+		self.previousinput.pop()
 		layerdeltas = list()
 		for layer, layeroutput in zip(self.layers, numpy.split(outputvector, self.outputdimensions[1: -1])):
 			layerdeltas.append(layer.backpropagate(layeroutput))
@@ -281,8 +293,8 @@ class Recurrent(Container):
 		self.hiddens = hiddens
 		self.inputs = self.layers[0].inputs - self.hiddens
 		self.outputs = self.layers[0].outputs - self.hiddens
-		self.previoushiddens = None
-		self.previousdeltas = None
+		self.previoushiddens = [numpy.zeros((self.hiddens, 1), dtype = float)]
+		self.previousdeltas = [numpy.zeros((self.hiddens, 1), dtype = float)]
 
 	def feedforward(self, inputvector):
 		'''
@@ -290,10 +302,12 @@ class Recurrent(Container):
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput = inputvector
-		outputvector = self.layers[0].feedforward(numpy.concatenate([self.previoushiddens, self.previousinput]))
-		self.previoushiddens, self.previousoutput = numpy.split(outputvector, [self.hiddens])
-		return self.previousoutput
+		self.previousinput.append(inputvector)
+		outputvector = self.layers[0].feedforward(numpy.concatenate([self.previoushiddens[-1], self.previousinput[-1]]))
+		hiddens, output = numpy.split(outputvector, [self.hiddens])
+		self.previoushiddens.append(hiddens)
+		self.previousoutput.append(output)
+		return self.previousoutput[-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -301,13 +315,17 @@ class Recurrent(Container):
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
-		deltavector = self.layers[0].backpropagate(numpy.concatenate([numpy.zeros((self.hiddens + self.outputs, 1), dtype = float)]))
+		self.previousoutput.pop()
+		self.previousinput.pop()
+		deltavector = self.layers[0].backpropagate(numpy.concatenate([self.previousdeltas[-1], outputvector]))
 		deltahidden, deltainput = numpy.split(deltavector, [self.hiddens])
+		self.previousdeltas.append(deltahidden)
 		return deltainput
 
 	def timingsetup(self):
 		'''
 			Method to prepare layer for time recurrence
 		'''
-		self.previoushiddens = numpy.zeros((self.hiddens, 1), dtype = float)
+		self.previoushiddens = [numpy.zeros((self.hiddens, 1), dtype = float)]
+		self.previousdeltas = [numpy.zeros((self.hiddens, 1), dtype = float)]
 		Container.timingsetup(self)

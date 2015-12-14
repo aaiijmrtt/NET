@@ -3,8 +3,8 @@
 	Classes embody Parametric Non Linear Compression Layers,
 	used to learn low dimensional representations of data.
 '''
-import numpy
-from . import layer, transfer, error
+import math, numpy
+from . import configure, layer, transfer, error
 
 class AutoEncoder(layer.Layer):
 	'''
@@ -21,13 +21,12 @@ class AutoEncoder(layer.Layer):
 			: param alpha : learning rate constant hyperparameter
 			: param nonlinearity : transfer function applied after linear transformation of inputs
 		'''
-		layer.Layer.__init__(self, inputs, inputs, alpha)
+		layer.Layer.__init__(self, inputs, hiddens, alpha)
 		self.hiddens = hiddens
-		self.previoushidden = None
-		self.parameters['weightsin'] = numpy.random.normal(0.0, 1.0 / numpy.sqrt(self.inputs), (self.hiddens, self.inputs))
-		self.parameters['weightsout'] = numpy.random.normal(0.0, 1.0 / numpy.sqrt(self.hiddens), (self.inputs, self.hiddens))
-		self.parameters['biasesin'] = numpy.random.normal(0.0, 1.0 / numpy.sqrt(self.inputs), (self.hiddens, 1))
-		self.parameters['biasesout'] = numpy.random.normal(0.0, 1.0 / numpy.sqrt(self.hiddens), (self.inputs, 1))
+		self.parameters['weightsin'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.inputs), (self.hiddens, self.inputs))
+		self.parameters['weightsout'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.hiddens), (self.inputs, self.hiddens))
+		self.parameters['biasesin'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.inputs), (self.hiddens, 1))
+		self.parameters['biasesout'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.hiddens), (self.inputs, 1))
 		self.transfer = nonlinearity() if nonlinearity is not None else transfer.Sigmoid(self.inputs)
 		self.cleardeltas()
 
@@ -37,10 +36,9 @@ class AutoEncoder(layer.Layer):
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput = self.modifier.feedforward(inputvector)
-		self.previoushidden = self.transfer.feedforward(numpy.add(numpy.dot(self.parameters['weightsin'], self.previousinput), self.parameters['biasesin']))
-		self.previousoutput = self.previoushidden
-		return self.previousoutput
+		self.previousinput.append(self.modifier.feedforward(inputvector))
+		self.previousoutput.append(self.transfer.feedforward(configure.functions['add'](configure.functions['dot'](self.parameters['weightsin'], self.previousinput[-1]), self.parameters['biasesin'])))
+		return self.previousoutput[-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -48,10 +46,11 @@ class AutoEncoder(layer.Layer):
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
+		self.previousoutput.pop()
 		outputvector = self.transfer.backpropagate(outputvector)
-		self.deltaparameters['weightsin'] = numpy.add(self.deltaparameters['weightsin'], numpy.dot(outputvector, numpy.transpose(self.previousinput)))
-		self.deltaparameters['biasesin'] = numpy.add(self.deltaparameters['biasesin'], outputvector)
-		return numpy.dot(numpy.transpose(self.parameters['weightsin']), outputvector)
+		self.deltaparameters['weightsin'] = configure.functions['add'](self.deltaparameters['weightsin'], configure.functions['dot'](outputvector, configure.functions['transpose'](self.previousinput.pop())))
+		self.deltaparameters['biasesin'] = configure.functions['add'](self.deltaparameters['biasesin'], outputvector)
+		return configure.functions['dot'](configure.functions['transpose'](self.parameters['weightsin']), outputvector)
 
 	def pretrain(self, trainingset, batch = 1, iterations = 1, criterion = None):
 		'''
@@ -63,22 +62,24 @@ class AutoEncoder(layer.Layer):
 			: returns : elementwise reconstruction error on termination
 		'''
 		def _feedforward(self, inputvector):
-			self.previousinput = self.modifier.feedforward(inputvector)
-			self.previoushidden = self.transfer.feedforward(numpy.add(numpy.dot(self.parameters['weightsin'], self.previousinput), self.parameters['biasesin']))
-			self.previousoutput = numpy.add(numpy.dot(self.parameters['weightsout'], self.previoushidden), self.parameters['biasesout'])
-			return self.previousoutput
+			self.previousinput.append(self.modifier.feedforward(inputvector))
+			self.previoushidden.append(self.transfer.feedforward(configure.functions['add'](configure.functions['dot'](self.parameters['weightsin'], self.previousinput[-1]), self.parameters['biasesin'])))
+			self.previousoutput.append(configure.functions['add'](configure.functions['dot'](self.parameters['weightsout'], self.previoushidden[-1]), self.parameters['biasesout']))
+			return self.previousoutput[-1]
 
 		def _backpropagate(self, outputvector):
-			self.deltaparameters['weightsout'] = numpy.add(self.deltaparameters['weightsout'], numpy.dot(outputvector, numpy.transpose(self.previoushidden)))
-			self.deltaparameters['biasesout'] = numpy.add(self.deltaparameters['biasesout'], outputvector)
-			outputvector = self.transfer.backpropagate(numpy.dot(numpy.transpose(self.parameters['weightsout']), outputvector))
-			self.deltaparameters['weightsin'] = numpy.add(self.deltaparameters['weightsin'], numpy.dot(outputvector, numpy.transpose(self.previousinput)))
-			self.deltaparameters['biasesin'] = numpy.add(self.deltaparameters['biasesin'], outputvector)
-			return numpy.dot(numpy.transpose(self.parameters['weightsin']), outputvector)
+			self.previousoutput.pop()
+			self.deltaparameters['weightsout'] = configure.functions['add'](self.deltaparameters['weightsout'], configure.functions['dot'](outputvector, configure.functions['transpose'](self.previoushidden.pop())))
+			self.deltaparameters['biasesout'] = configure.functions['add'](self.deltaparameters['biasesout'], outputvector)
+			outputvector = self.transfer.backpropagate(configure.functions['dot'](configure.functions['transpose'](self.parameters['weightsout']), outputvector))
+			self.deltaparameters['weightsin'] = configure.functions['add'](self.deltaparameters['weightsin'], configure.functions['dot'](outputvector, configure.functions['transpose'](self.previousinput.pop())))
+			self.deltaparameters['biasesin'] = configure.functions['add'](self.deltaparameters['biasesin'], outputvector)
+			return configure.functions['dot'](configure.functions['transpose'](self.parameters['weightsin']), outputvector)
 
 		if criterion is None:
 			criterion = error.MeanSquared(self.inputs)
 		self.trainingsetup()
+		self.hidden = list()
 		for i in range(iterations):
 			for j in range(len(trainingset)):
 				if j % batch == 0:
@@ -86,8 +87,8 @@ class AutoEncoder(layer.Layer):
 				criterion.feedforward(_feedforward(self, trainingset[j]))
 				_backpropagate(self, criterion.backpropagate(trainingset[j]))
 		self.testingsetup()
-		errorvector = numpy.zeros((self.outputs, 1), dtype = float)
+		errorvector = numpy.zeros((self.inputs, 1), dtype = float)
 		for vector in trainingset:
-			errorvector = numpy.add(errorvector, criterion.compute(_feedforward(self, vector), vector))
-		errorvector = numpy.divide(errorvector, len(trainingset))
+			errorvector = configure.functions['add'](errorvector, criterion.compute(_feedforward(self, vector), vector))
+		errorvector = configure.functions['divide'](errorvector, len(trainingset))
 		return errorvector

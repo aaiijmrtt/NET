@@ -1,44 +1,25 @@
 '''
-	Module containing Hopfiled Network Layers.
-	Classes embody Parametric Synchronous Autoassociative Recurrent Layers,
+	Module containing Bidirectional Associative Memory Layers.
+	Classes embody Parametric Synchronous Heteroassociative Recurrent Layers,
 	used to recall stored patterns.
 '''
 import math, numpy
 from . import configure, layer, error
 
-class HopfieldNetwork(layer.Layer):
+class BidirectionalAutoassociativeMemory(layer.Layer):
 	'''
-		Hopfield Network Layer
-		Mathematically, f(x) = W * x where W(i)(j) = W(j)(i)
-										and W(i)(i) = 0
+		Bidirectional Autoassociative Memory Layer
+		Mathematically, f(x) = W * x
+						x = W' * f(x)
 	'''
-	def __init__(self, inputs, alpha = None):
+	def __init__(self, inputs, outputs, alpha = None):
 		'''
 			Constructor
 			: param inputs : dimension of input (and output) feature space
 			: param alpha : learning rate constant hyperparameter
 		'''
-		layer.Layer.__init__(self, inputs, inputs, alpha)
-		self.parameters['weights'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.inputs), (self.inputs, self.inputs))
-		self.parameters['weights'] = configure.functions['add'](self.parameters['weights'], configure.functions['transpose'](self.parameters['weights']))
-		self.cleardeltas()
-
-	def cleardeltas(self):
-		'''
-			Method to clear accumulated parameter changes
-		'''
-		self.deltaparameters = self.modifier.cleardeltas()
-		for i in range(self.inputs):
-			self.parameters['weights'][i][i] = 0.0
-
-	def updateweights(self):
-		'''
-			Method to update weights based on accumulated parameter changes
-		'''
-		self.deltaparameters['weights'] = configure.functions['add'](self.deltaparameters['weights'], configure.functions['transpose'](self.deltaparameters['weights']))
-		self.deltaparameters = self.modifier.updateweights()
-		for parameter in self.parameters:
-			self.parameters[parameter] = configure.functions['subtract'](self.parameters[parameter], self.deltaparameters[parameter])
+		layer.Layer.__init__(self, inputs, outputs, alpha)
+		self.parameters['weights'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.inputs), (self.outputs, self.inputs))
 		self.cleardeltas()
 
 	def feedforward(self, inputvector):
@@ -64,19 +45,18 @@ class HopfieldNetwork(layer.Layer):
 	def pretrain(self, trainingset, criterion = None):
 		'''
 			Method to pretrain parameters using Hebbian Learning
-			: param trainingset : unsupervised training set
+			: param trainingset : supervised training set
 			: param criterion : criterion used to quantify reconstruction error
 			: returns : elementwise reconstruction error on termination
 		'''
 		if criterion is None:
 			criterion = error.MeanSquared(self.inputs)
 		self.parameters['weights'] = numpy.zeros((self.inputs, self.inputs), dtype = float)
-		for vector in trainingset:
-			self.parameters['weights'] = configure.functions['add'](self.parameters['weights'], configure.functions['dot'](vector, configure.functions['transpose'](vector)))
+		for inputvector, outputvector in trainingset:
+			self.parameters['weights'] = configure.functions['add'](self.parameters['weights'], configure.functions['dot'](inputvector, configure.functions['transpose'](outputvector)))
 		self.parameters['weights'] = configure.functions['divide'](self.parameters['weights'], len(trainingset))
-		self.updateweights()
 		errorvector = numpy.zeros((self.outputs, 1), dtype = float)
-		for vector in trainingset:
-			errorvector = configure.functions['add'](errorvector, criterion.compute(self.feedforward(vector), vector))
+		for inputvector, outputvector in trainingset:
+			errorvector = configure.functions['add'](errorvector, criterion.compute(self.feedforward(inputvector), outputvector))
 		errorvector = configure.functions['divide'](errorvector, len(trainingset))
 		return errorvector

@@ -1,7 +1,7 @@
 #!/usr/bin/python
-import distutils.core
+import setuptools
 
-distutils.core.setup(name = 'net',
+setuptools.setup(name = 'net',
 	version = '0.1',
 	description = 'Python Neural Network Library',
 	long_description = '''Putting Neural Networks together should be easier
@@ -21,6 +21,6 @@ distutils.core.setup(name = 'net',
 		'Programming Language :: Python :: 3'
 	],
 	packages = ['net', 'bench', 'data'],
-	install_requires = ['numpy', 'matplotlib'],
-	test_suite = ['test']
+	install_requires = ['numpy', 'matplotlib', 'pyopencl', 'dispy'],
+	test_suite = 'test'
 )

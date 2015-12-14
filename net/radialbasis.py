@@ -2,8 +2,8 @@
 	Module containing Radial Basis Functions.
 	Classes embody Parametric Radial Basis Layers.
 '''
-import numpy
-from . import layer, error
+import math, numpy
+from . import configure, layer, error
 
 class RadialBasis(layer.Layer):
 	'''
@@ -18,10 +18,11 @@ class RadialBasis(layer.Layer):
 			: param alpha : learning rate constant hyperparameter
 		'''
 		layer.Layer.__init__(self, inputs, outputs, alpha)
+		self.previousradius = list()
 		self.parameters = dict()
 		self.deltaparameters = dict()
-		self.parameters['weights'] = numpy.random.normal(0.0, 1.0 / numpy.sqrt(self.inputs), (self.outputs, self.inputs))
-		self.parameters['biases'] = numpy.random.normal(0.0, 1.0 / numpy.sqrt(self.inputs), (self.outputs, 1))
+		self.parameters['weights'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.inputs), (self.outputs, self.inputs))
+		self.parameters['biases'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.inputs), (self.outputs, 1))
 		self.function = None
 		self.functionderivative = None
 		self.weightsderivative = None
@@ -34,14 +35,14 @@ class RadialBasis(layer.Layer):
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput = inputvector
-		self.previousradius = numpy.empty((self.outputs, 1), dtype = float)
-		self.previousoutput = numpy.empty((self.outputs, 1), dtype = float)
+		self.previousinput.append(inputvector)
+		self.previousradius.append(numpy.empty((self.outputs, 1), dtype = float))
+		self.previousoutput.append(numpy.empty((self.outputs, 1), dtype = float))
 		for i in range(self.outputs):
 			centrevector = self.parameters['weights'][i].reshape((self.inputs, 1))
-			self.previousradius[i][0] = numpy.sum(numpy.square(numpy.subtract(self.previousinput, centrevector))) ** 0.5
-			self.previousoutput[i][0] = self.function(self.previousradius[i][0], self.parameters['biases'][i][0])
-		return self.previousoutput
+			self.previousradius[-1][i][0] = configure.functions['sum'](configure.functions['square'](configure.functions['subtract'](self.previousinput[-1], centrevector))) ** 0.5
+			self.previousoutput[-1][i][0] = self.function(self.previousradius[-1][i][0], self.parameters['biases'][i][0])
+		return self.previousoutput[-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -52,9 +53,12 @@ class RadialBasis(layer.Layer):
 		deltainputs = numpy.zeros((self.inputs, 1), dtype = float)
 		for i in range(self.outputs):
 			centrevector = self.parameters['weights'][i].reshape((self.inputs, 1))
-			deltainputs = numpy.add(deltainputs, numpy.multiply(outputvector[i][0], self.functionderivative(self.previousradius[i][0], self.previousinput, centrevector, self.parameters['biases'][i][0], self.previousoutput[i][0])))
-			self.deltaparameters['weights'][i] = numpy.add(self.deltaparameters['weights'][i], numpy.multiply(outputvector[i][0], numpy.transpose(self.weightsderivative(self.previousradius[i][0], self.previousinput, centrevector, self.parameters['biases'][i][0], self.previousoutput[i][0]))))
-			self.deltaparameters['biases'][i][0] += outputvector[i][0] * self.biasesderivative(self.previousradius[i][0], self.previousinput, centrevector, self.parameters['biases'][i][0], self.previousoutput[i][0])
+			deltainputs = configure.functions['add'](deltainputs, configure.functions['multiply'](outputvector[i][0], self.functionderivative(self.previousradius[-1][i][0], self.previousinput[-1], centrevector, self.parameters['biases'][i][0], self.previousoutput[-1][i][0])))
+			self.deltaparameters['weights'][i] = configure.functions['add'](self.deltaparameters['weights'][i], configure.functions['multiply'](outputvector[i][0], configure.functions['transpose'](self.weightsderivative(self.previousradius[-1][i][0], self.previousinput[-1], centrevector, self.parameters['biases'][i][0], self.previousoutput[-1][i][0]))))
+			self.deltaparameters['biases'][i][0] += outputvector[i][0] * self.biasesderivative(self.previousradius[-1][i][0], self.previousinput[-1], centrevector, self.parameters['biases'][i][0], self.previousoutput[-1][i][0])
+		self.previousoutput.pop()
+		self.previousradius.pop()
+		self.previousinput.pop()
 		return deltainputs
 
 	def pretrain(self, trainingset, threshold = 0.0001, iterations = 10, criterion = None):
@@ -74,25 +78,25 @@ class RadialBasis(layer.Layer):
 				bestdistance = float('inf')
 				bestindex = -1
 				for i in range(len(clusters)):
-					distance = numpy.sum(criterion.compute(point, clusters[i][0]))
+					distance = configure.functions['sum'](criterion.compute(point, clusters[i][0]))
 					if distance < bestdistance:
 						bestdistance = distance
 						bestindex = i
 				clusters[bestindex].append(point)
 			for cluster in clusters:
 				if len(cluster) > 1:
-					cluster[0] = numpy.mean(cluster[1:], axis = 0)
+					cluster[0] = configure.functions['mean'](cluster[1:], axis = 0)
 			maximumdistance = float('-inf')
 			for cluster in clusters:
 				if len(cluster) > 1:
 					for point in cluster[1: ]:
-						distance = numpy.sum(criterion.compute(point, cluster[0]))
+						distance = configure.functions['sum'](criterion.compute(point, cluster[0]))
 						if distance > maximumdistance:
 							maximumdistance = distance
 			if maximumdistance < threshold:
 				break
 		for i in range(len(self.parameters['weights'])):
-			self.parameters['weights'][i] = numpy.transpose(clusters[i][0])
+			self.parameters['weights'][i] = configure.functions['transpose'](clusters[i][0])
 		return maximumdistance
 
 class GaussianRB(RadialBasis):
@@ -108,10 +112,10 @@ class GaussianRB(RadialBasis):
 			: param alpha : learning rate constant hyperparameter
 		'''
 		RadialBasis.__init__(self, inputs, outputs, alpha)
-		self.function = lambda inputradius, coefficient: numpy.exp(-inputradius / coefficient ** 2)
-		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: numpy.multiply(2.0 * output / (coefficient ** 2), numpy.subtract(centrevector, inputvector))
-		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: numpy.multiply(2.0 * output / (coefficient ** 2), numpy.subtract(inputvector, centrevector))
-		self.biasesderivative = lambda inputradius, inputvector, centrevector, coefficient, output: 2.0 * output * numpy.sum(numpy.square(numpy.subtract(inputvector, centrevector))) / (coefficient ** 3)
+		self.function = lambda inputradius, coefficient: configure.functions['exp'](-inputradius / coefficient ** 2)
+		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](2.0 * output / (coefficient ** 2), configure.functions['subtract'](centrevector, inputvector))
+		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](2.0 * output / (coefficient ** 2), configure.functions['subtract'](inputvector, centrevector))
+		self.biasesderivative = lambda inputradius, inputvector, centrevector, coefficient, output: 2.0 * output * configure.functions['sum'](configure.functions['square'](configure.functions['subtract'](inputvector, centrevector))) / (coefficient ** 3)
 
 class MultiQuadraticRB(RadialBasis):
 	'''
@@ -129,8 +133,8 @@ class MultiQuadraticRB(RadialBasis):
 		RadialBasis.__init__(self, inputs, outputs, alpha)
 		self.beta = beta if beta is not None else 0.5
 		self.function = lambda inputradius, coefficient: (inputradius ** 2 + coefficient ** 2) ** self.beta
-		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: numpy.multiply(self.beta * (inputradius ** 2 + coefficient ** 2) ** (self.beta - 1.0) * 2.0, numpy.subtract(inputvector, centrevector))
-		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: numpy.multiply(self.beta * (inputradius ** 2 + coefficient ** 2) ** (self.beta - 1.0) * 2.0, numpy.subtract(centrevector, inputvector))
+		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](self.beta * (inputradius ** 2 + coefficient ** 2) ** (self.beta - 1.0) * 2.0, configure.functions['subtract'](inputvector, centrevector))
+		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](self.beta * (inputradius ** 2 + coefficient ** 2) ** (self.beta - 1.0) * 2.0, configure.functions['subtract'](centrevector, inputvector))
 		self.biasesderivative = lambda inputradius, inputvector, centrevector, coefficient, output: self.beta * (inputradius ** 2 + coefficient ** 2) ** (self.beta - 1.0) * 2.0 * coefficient
 
 class InverseMultiQuadraticRB(RadialBasis):
@@ -149,8 +153,8 @@ class InverseMultiQuadraticRB(RadialBasis):
 		RadialBasis.__init__(self, inputs, outputs, alpha)
 		self.beta = beta if beta is not None else 0.5
 		self.function = lambda inputradius, coefficient: (inputradius ** 2 + coefficient ** 2) ** (-self.beta)
-		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: numpy.multiply(-self.beta * (inputradius ** 2 + coefficient ** 2) ** (-self.beta - 1.0) * 2.0, numpy.subtract(inputvector, centrevector))
-		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: numpy.multiply(-self.beta * (inputradius ** 2 + coefficient ** 2) ** (-self.beta - 1.0) * 2.0, numpy.subtract(centrevector, inputvector))
+		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](-self.beta * (inputradius ** 2 + coefficient ** 2) ** (-self.beta - 1.0) * 2.0, configure.functions['subtract'](inputvector, centrevector))
+		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](-self.beta * (inputradius ** 2 + coefficient ** 2) ** (-self.beta - 1.0) * 2.0, configure.functions['subtract'](centrevector, inputvector))
 		self.biasesderivative = lambda inputradius, inputvector, centrevector, coefficient, output: -self.beta * (inputradius ** 2 + coefficient ** 2) ** (-self.beta - 1.0) * 2.0 * coefficient
 
 class ThinPlateSplineRB(RadialBasis):
@@ -166,9 +170,9 @@ class ThinPlateSplineRB(RadialBasis):
 			: param alpha : learning rate constant hyperparameter
 		'''
 		RadialBasis.__init__(self, inputs, outputs, alpha)
-		self.function = lambda inputradius, coefficient: inputradius ** 2 * numpy.log(inputradius)
-		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: numpy.multiply((2.0 * numpy.log(inputradius) + 1.0), numpy.subtract(inputvector, centrevector))
-		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: numpy.multiply((2.0 * numpy.log(inputradius) + 1.0), numpy.subtract(centrevector, inputvector))
+		self.function = lambda inputradius, coefficient: inputradius ** 2 * configure.functions['log'](inputradius)
+		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply']((2.0 * configure.functions['log'](inputradius) + 1.0), configure.functions['subtract'](inputvector, centrevector))
+		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply']((2.0 * configure.functions['log'](inputradius) + 1.0), configure.functions['subtract'](centrevector, inputvector))
 		self.biasesderivative = lambda inputradius, inputvector, centrevector, coefficient, output: 0.0
 
 class CubicRB(RadialBasis):
@@ -185,8 +189,8 @@ class CubicRB(RadialBasis):
 		'''
 		RadialBasis.__init__(self, inputs, outputs, alpha)
 		self.function = lambda inputradius, coefficient: inputradius ** 3
-		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: numpy.multiply(3.0 * inputradius, numpy.subtract(inputvector, centrevector))
-		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: numpy.multiply(3.0 * inputradius, numpy.subtract(centrevector, inputvector))
+		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](3.0 * inputradius, configure.functions['subtract'](inputvector, centrevector))
+		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](3.0 * inputradius, configure.functions['subtract'](centrevector, inputvector))
 		self.biasesderivative = lambda inputradius, inputvector, centrevector, coefficient, output: 0.0
 
 class LinearRB(RadialBasis):
@@ -203,6 +207,6 @@ class LinearRB(RadialBasis):
 		'''
 		RadialBasis.__init__(self, inputs, outputs, alpha)
 		self.function = lambda inputradius, coefficient: inputradius
-		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: numpy.divide(numpy.subtract(inputvector, centrevector), output)
-		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: numpy.divide(numpy.subtract(centrevector, inputvector), output)
+		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['divide'](configure.functions['subtract'](inputvector, centrevector), output)
+		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['divide'](configure.functions['subtract'](centrevector, inputvector), output)
 		self.biasesderivative = lambda inputradius, inputvector, centrevector, coefficient, output: 0.0

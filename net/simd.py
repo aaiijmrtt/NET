@@ -1,8 +1,9 @@
 '''
-	Module containing Optimizers and Hyperoptimizers.
+	Module containing Distributed Optimizers and Hyperoptimizers.
 	Classes embody Parameter Optimization Algorithms,
 	and Hyperparameter Optimization Algorithms.
 '''
+# presenting redirecting to undistributed implementations
 import numpy, copy
 
 class Optimizer:

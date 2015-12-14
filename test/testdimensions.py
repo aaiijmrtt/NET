@@ -8,8 +8,8 @@ class DimensionsTestCase(unittest.TestCase):
 	quadrupleparameterclasses = None
 
 	def setUp(self):
-		self.singleparameterclasses = [net.Step, net.Sigmoid, net.HyperbolicTangent, net.HardHyperbolicTangent, net.RectifiedLinearUnit, net.ParametricRectifiedLinearUnit, net.HardShrink, net.SoftShrink, net.SoftMax, net.SoftPlus, net.ShiftScale, net.SoftSign, net.MeanSquared, net.CrossEntropy, net.NegativeLogLikelihood, net.CrossSigmoid, net.LogSoftMax, net.KullbackLeiblerDivergence, net.CosineDistance]
-		self.doubleparameterclasses = [net.Linear, net.Split, net.MergeSum, net.MergeProduct]
+		self.singleparameterclasses = [net.Step, net.Sigmoid, net.HyperbolicTangent, net.HardHyperbolicTangent, net.RectifiedLinearUnit, net.ParametricRectifiedLinearUnit, net.HardShrink, net.SoftShrink, net.SoftMax, net.SoftPlus, net.ShiftScale, net.SoftSign, net.MeanSquared, net.CrossEntropy, net.NegativeLogLikelihood, net.CrossSigmoid, net.LogSoftMax, net.KullbackLeiblerDivergence, net.CosineDistance, net.Normalizer, net.Threshold, net.StochasticThreshold, net.HopfieldNetwork]
+		self.doubleparameterclasses = [net.Linear, net.Split, net.MergeSum, net.MergeProduct, net.Perceptron, net.BidirectionalAutoassociativeMemory, net.GaussianRB, net.MultiQuadraticRB, net.InverseMultiQuadraticRB, net.ThinPlateSplineRB, net.CubicRB, net.LinearRB, net.ManhattanSO, net.EuclideanSquaredSO, net.RestrictedBoltzmannMachine, net.AutoEncoder, net.SimpleLSTM, net.BasicLSTM, net.OutputFeedbackLSTM, net.PeepholeLSTM]
 		self.quadrupleparameterclasses = [net.Convolutional, net.MaxPooling, net.MinPooling, net.AveragePooling]
 
 	def testsingleparameterclasses(self):

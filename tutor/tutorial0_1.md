@@ -14,6 +14,10 @@ functions. You might be able to get away without using it, if you know what you
 are doing, but we would still recommend that you install: it is really quite
 neat in itself.
 
+* [Dispy](http://dispy.sourceforge.net/): net uses Dispy for its distributed
+hyperparameter optimization algorithms. It takes the hairpulling out of
+hyperparameter guessing, if you have multiple computers to spare.
+
 ## Downloading
 
 If you use Git, you may clone a local copy of the package:
@@ -40,3 +44,10 @@ If you installed with:
 You may uninstall by running from the root directory of the package:
 
 		$ cat files.txt | xargs rm -rf
+
+## Developing
+
+If you intend to contribute to the development of code, you should consider
+installing using:
+
+		$ python setup.py develop

@@ -20,8 +20,8 @@ class Split:
 		self.inputs = inputs
 		self.parameter = parameter
 		self.outputs = self.inputs * self.parameter
-		self.previousinput = None
-		self.previousoutput = None
+		self.previousinput = list()
+		self.previousoutput = list()
 
 	def feedforward(self, inputvector):
 		'''
@@ -29,9 +29,9 @@ class Split:
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput = inputvector
-		self.previousoutput = numpy.concatenate([self.previousinput] * self.parameter)
-		return self.previousoutput
+		self.previousinput.append(inputvector)
+		self.previousoutput.append(numpy.concatenate([self.previousinput[-1]] * self.parameter))
+		return self.previousoutput[-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -39,6 +39,8 @@ class Split:
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
+		self.previousoutput.pop()
+		self.previousinput.pop()
 		deltas = numpy.zeros((self.inputs, 1), dtype = float)
 		for i in range(self.outputs):
 			deltas[i % self.inputs][0] += outputvector[i][0]
@@ -59,8 +61,8 @@ class MergeSum:
 		self.outputs = outputs
 		self.parameter = parameter
 		self.inputs = self.outputs * self.parameter
-		self.previousinput = None
-		self.previousoutput = None
+		self.previousinput = list()
+		self.previousoutput = list()
 
 	def feedforward(self, inputvector):
 		'''
@@ -68,11 +70,11 @@ class MergeSum:
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput = inputvector
-		self.previousoutput = numpy.zeros((self.outputs, 1), dtype = float)
+		self.previousinput.append(inputvector)
+		self.previousoutput.append(numpy.zeros((self.outputs, 1), dtype = float))
 		for i in range(self.inputs):
-			self.previousoutput[i % self.outputs][0] += self.previousinput[i][0]
-		return self.previousoutput
+			self.previousoutput[-1][i % self.outputs][0] += self.previousinput[-1][i][0]
+		return self.previousoutput[-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -80,6 +82,8 @@ class MergeSum:
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
+		self.previousoutput.pop()
+		self.previousinput.pop()
 		return numpy.concatenate([outputvector] * self.parameter)
 
 class MergeProduct:
@@ -97,8 +101,8 @@ class MergeProduct:
 		self.outputs = outputs
 		self.parameter = parameter
 		self.inputs = self.outputs * self.parameter
-		self.previousinput = None
-		self.previousoutput = None
+		self.previousinput = list()
+		self.previousoutput = list()
 
 	def feedforward(self, inputvector):
 		'''
@@ -106,11 +110,11 @@ class MergeProduct:
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput = inputvector
-		self.previousoutput = numpy.ones((self.outputs, 1), dtype = float)
+		self.previousinput.append(inputvector)
+		self.previousoutput.append(numpy.ones((self.outputs, 1), dtype = float))
 		for i in range(self.inputs):
-			self.previousoutput[i % self.outputs][0] *= self.previousinput[i][0]
-		return self.previousoutput
+			self.previousoutput[-1][i % self.outputs][0] *= self.previousinput[-1][i][0]
+		return self.previousoutput[-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -120,7 +124,9 @@ class MergeProduct:
 		'''
 		deltas = numpy.concatenate([outputvector] * self.parameter)
 		for i in range(self.inputs):
-			deltas[i][0] *= self.previousoutput[i % self.outputs][0] / self.previousinput[i][0]
+			deltas[i][0] *= self.previousoutput[-1][i % self.outputs][0] / self.previousinput[-1][i][0]
+		self.previousoutput.pop()
+		self.previousinput.pop()
 		return deltas
 
 class Step:
@@ -131,12 +137,12 @@ class Step:
 	def __init__(self, inputs):
 		'''
 			Constructor
-			: param outputs : dimension of input (and output) feature space
+			: param inputs : dimension of input (and output) feature space
 		'''
 		self.inputs = inputs
 		self.outputs = self.inputs
-		self.previousinput = None
-		self.previousoutput = None
+		self.previousinput = list()
+		self.previousoutput = list()
 
 	def feedforward(self, inputvector):
 		'''
@@ -144,9 +150,9 @@ class Step:
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput = inputvector
-		self.previousoutput = self.previousinput
-		return self.previousoutput
+		self.previousinput.append(inputvector)
+		self.previousoutput.append(self.previousinput[-1])
+		return self.previousoutput[-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -154,4 +160,44 @@ class Step:
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
+		self.previousinput.pop()
+		self.previousoutput.pop()
+		return outputvector
+
+class Constant:
+	'''
+		Identity Connector Function
+		Mathematically, f(x) = p
+	'''
+	def __init__(self, inputs, outputs, parameter = None):
+		'''
+			Constructor
+			: param inputs : dimension of input (and output) feature space
+			: param outputs : dimension of output feature space
+			: param parameter : p, as given in its mathematical equation
+		'''
+		self.inputs = inputs
+		self.outputs = outputs
+		self.previousinput = list()
+		self.previousoutput = list()
+		self.parameter = parameter if parameter is not None else 1.0
+
+	def feedforward(self, inputvector):
+		'''
+			Method to feedforward a vector through the layer
+			: param inputvector : vector in input feature space
+			: returns : fedforward vector mapped to output feature space
+		'''
+		self.previousinput.append(inputvector)
+		self.previousoutput.append(numpy.multiply(self.parameter, numpy.ones((self.outputs, 1), dtype = float)))
+		return self.previousoutput[-1]
+
+	def backpropagate(self, outputvector): # invisible during backpropagation
+		'''
+			Method to backpropagate derivatives through the layer
+			: param outputvector : derivative vector in output feature space
+			: returns : backpropagated vector mapped to input feature space
+		'''
+		self.previousinput.pop()
+		self.previousoutput.pop()
 		return outputvector

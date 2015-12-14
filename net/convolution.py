@@ -4,7 +4,7 @@
 	used to exploit spatial coherence.
 '''
 import numpy
-from . import layer
+from . import configure, layer
 
 class Convolution:
 	'''
@@ -97,12 +97,12 @@ class Convolutional(layer.Layer, Convolution):
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput = inputvector
-		self.previousoutput = numpy.empty((self.outputs, 1), dtype = float)
+		self.previousinput.append(inputvector)
+		self.previousoutput.append(numpy.empty((self.outputs, 1), dtype = float))
 		for row in range(self.rows):
 			for column in range(self.columns):
-				self.previousoutput[row * self.columns + column][0] = numpy.add(numpy.dot(self.parameters['weights'], self.convolute(row, column, self.previousinput)), self.parameters['biases'])
-		return self.previousoutput
+				self.previousoutput[-1][row * self.columns + column][0] = configure.functions['add'](configure.functions['dot'](self.parameters['weights'], self.convolute(row, column, self.previousinput[-1])), self.parameters['biases'])
+		return self.previousoutput[-1]
 
 	def backpropagate(self, outputvector): # ignores dropout
 		'''
@@ -110,12 +110,14 @@ class Convolutional(layer.Layer, Convolution):
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
+		self.previousoutput.pop()
 		backvector = numpy.zeros((self.inputs, 1), dtype = float)
 		for row in range(self.rows):
 			for column in range(self.columns):
-				self.deltaparameters['weights'] = numpy.add(self.deltaparameters['weights'], numpy.multiply(outputvector[row * self.columns + column][0], numpy.transpose(self.convolute(row, column, self.previousinput))))
-				self.deltaparameters['biases'] = numpy.add(outputvector[row * self.columns + column][0], self.deltaparameters['biases'])
-				backvector = self.unconvolute(row, column, numpy.multiply(outputvector[row * self.columns + column][0], numpy.transpose(self.parameters['weights'])), backvector)
+				self.deltaparameters['weights'] = configure.functions['add'](self.deltaparameters['weights'], configure.functions['multiply'](outputvector[row * self.columns + column][0], configure.functions['transpose'](self.convolute(row, column, self.previousinput[-1]))))
+				self.deltaparameters['biases'] = configure.functions['add'](outputvector[row * self.columns + column][0], self.deltaparameters['biases'])
+				backvector = self.unconvolute(row, column, configure.functions['multiply'](outputvector[row * self.columns + column][0], configure.functions['transpose'](self.parameters['weights'])), backvector)
+		self.previousinput.pop()
 		return backvector
 
 class Pooling(Convolution):
@@ -135,8 +137,8 @@ class Pooling(Convolution):
 		Convolution.__init__(self, height, width, depth, extent, stride, 0)
 		self.inputs = self.height * self.width * self.depth
 		self.outputs = self.rows * self.columns
-		self.previousinput = None
-		self.previousoutput = None
+		self.previousinput = list()
+		self.previousoutput = list()
 		self.function = None
 		self.derivative = None
 
@@ -146,12 +148,12 @@ class Pooling(Convolution):
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput = inputvector
-		self.previousoutput = numpy.empty((self.outputs, 1), dtype = float)
+		self.previousinput.append(inputvector)
+		self.previousoutput.append(numpy.empty((self.outputs, 1), dtype = float))
 		for row in range(self.rows):
 			for column in range(self.columns):
-				self.previousoutput[row * self.columns + column][0] = self.function(self.convolute(row, column, self.previousinput))
-		return self.previousoutput
+				self.previousoutput[-1][row * self.columns + column][0] = self.function(self.convolute(row, column, self.previousinput[-1]))
+		return self.previousoutput[-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -162,7 +164,9 @@ class Pooling(Convolution):
 		backvector = numpy.zeros((self.inputs, 1), dtype = float)
 		for row in range(self.rows):
 			for column in range(self.columns):
-				backvector = self.unconvolute(row, column, self.derivative(self.convolute(row, column, self.previousinput), self.previousoutput[row * self.columns + column][0], outputvector[row * self.columns + column][0]), backvector)
+				backvector = self.unconvolute(row, column, self.derivative(self.convolute(row, column, self.previousinput[-1]), self.previousoutput[-1][row * self.columns + column][0], outputvector[row * self.columns + column][0]), backvector)
+		self.previousoutput.pop()
+		self.previousinput.pop()
 		return backvector
 
 class MaxPooling(Pooling):
@@ -180,8 +184,8 @@ class MaxPooling(Pooling):
 			: param stride : dimension of input feature space skipped between convolutions
 		'''
 		Pooling.__init__(self, height, width, depth, extent, stride)
-		self.function = numpy.amax
-		self.derivative = numpy.vectorize(lambda x, y, z: z if x == y else 0.0)
+		self.function = configure.functions['amax']
+		self.derivative = configure.functions['vectorize'](lambda x, y, z: z if x == y else 0.0)
 
 class MinPooling(Pooling):
 	'''
@@ -198,8 +202,8 @@ class MinPooling(Pooling):
 			: param stride : dimension of input feature space skipped between convolutions
 		'''
 		Pooling.__init__(self, height, width, depth, extent, stride)
-		self.function = numpy.amin
-		self.derivative = numpy.vectorize(lambda x, y, z: z if x == y else 0.0)
+		self.function = configure.functions['amin']
+		self.derivative = configure.functions['vectorize'](lambda x, y, z: z if x == y else 0.0)
 
 class AveragePooling(Pooling):
 	'''
@@ -216,5 +220,5 @@ class AveragePooling(Pooling):
 			: param stride : dimension of input feature space skipped between convolutions
 		'''
 		Pooling.__init__(self, height, width, depth, extent, stride)
-		self.function = numpy.mean
-		self.derivative = numpy.vectorize(lambda x, y, z: z / (self.extent * self.extent * self.depth))
+		self.function = configure.functions['mean']
+		self.derivative = configure.functions['vectorize'](lambda x, y, z: z / (self.extent * self.extent * self.depth))

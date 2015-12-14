@@ -25,7 +25,7 @@ class Univariate(visualize.UnivariatePlot):
 		'''
 		self.begin = begin
 		self.end = end
-		self.value = value
+		self.value = value if value is not None else 0.0
 		self.point = point if point is not None else (self.begin + self.end) / 2.0
 		self.shift = shift
 		self.increasing = None

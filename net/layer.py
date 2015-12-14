@@ -3,8 +3,8 @@
 	Classes embody Parametric Layers,
 	used to construct a neural network.
 '''
-import numpy
-from . import modifier
+import math, numpy
+from . import configure, modifier, transfer
 
 class Layer:
 	'''
@@ -23,8 +23,8 @@ class Layer:
 		self.applylearningrate(alpha)
 		self.parameters = dict()
 		self.deltaparameters = dict()
-		self.previousinput = None
-		self.previousoutput = None
+		self.previousinput = list()
+		self.previousoutput = list()
 
 	def cleardeltas(self):
 		'''
@@ -38,7 +38,7 @@ class Layer:
 		'''
 		self.deltaparameters = self.modifier.updateweights()
 		for parameter in self.parameters:
-			self.parameters[parameter] = numpy.subtract(self.parameters[parameter], self.deltaparameters[parameter])
+			self.parameters[parameter] = configure.functions['subtract'](self.parameters[parameter], self.deltaparameters[parameter])
 		self.cleardeltas()
 
 	def trainingsetup(self):
@@ -121,6 +121,12 @@ class Layer:
 		'''
 		self.modifier.applyresilientpropagation(tau, maximum, minimum)
 
+	def applyquickpropagation(self):
+		'''
+			Method to apply quick propagation gradient descent optimization
+		'''
+		self.modifier.applyquickpropagation()
+
 class Linear(Layer):
 	'''
 		Linear Layer
@@ -134,8 +140,8 @@ class Linear(Layer):
 			: param alpha : parameter learning rate
 		'''
 		Layer.__init__(self, inputs, outputs, alpha)
-		self.parameters['weights'] = numpy.random.normal(0.0, 1.0 / numpy.sqrt(self.inputs), (self.outputs, self.inputs))
-		self.parameters['biases'] = numpy.random.normal(0.0, 1.0 / numpy.sqrt(self.inputs), (self.outputs, 1))
+		self.parameters['weights'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.inputs), (self.outputs, self.inputs))
+		self.parameters['biases'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.inputs), (self.outputs, 1))
 		self.cleardeltas()
 
 	def feedforward(self, inputvector):
@@ -144,9 +150,9 @@ class Linear(Layer):
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput = self.modifier.feedforward(inputvector)
-		self.previousoutput = numpy.add(numpy.dot(self.parameters['weights'], self.previousinput), self.parameters['biases'])
-		return self.previousoutput
+		self.previousinput.append(self.modifier.feedforward(inputvector))
+		self.previousoutput.append(configure.functions['add'](configure.functions['dot'](self.parameters['weights'], self.previousinput[-1]), self.parameters['biases']))
+		return self.previousoutput[-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -154,9 +160,51 @@ class Linear(Layer):
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
-		self.deltaparameters['weights'] = numpy.add(self.deltaparameters['weights'], numpy.dot(outputvector, numpy.transpose(self.previousinput)))
-		self.deltaparameters['biases'] = numpy.add(self.deltaparameters['biases'], outputvector)
-		return numpy.dot(numpy.transpose(self.parameters['weights']), outputvector)
+		self.previousoutput.pop()
+		self.deltaparameters['weights'] = configure.functions['add'](self.deltaparameters['weights'], configure.functions['dot'](outputvector, configure.functions['transpose'](self.previousinput.pop())))
+		self.deltaparameters['biases'] = configure.functions['add'](self.deltaparameters['biases'], outputvector)
+		return configure.functions['dot'](configure.functions['transpose'](self.parameters['weights']), outputvector)
+
+class Nonlinear(Layer):
+	'''
+		NonLinear Layer
+		Mathematically, f(x) = sigma(W * x + b)
+	'''
+	def __init__(self, inputs, outputs, alpha = None, activation = None):
+		'''
+			Constructor
+			: param inputs : dimension of input feature space
+			: param outputs : dimension of output feature space
+			: param alpha : parameter learning rate
+			: param activation : sigma, as given in its mathematical equation
+		'''
+		Layer.__init__(self, inputs, outputs, alpha)
+		self.parameters['weights'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.inputs), (self.outputs, self.inputs))
+		self.parameters['biases'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.inputs), (self.outputs, 1))
+		self.activation = activation(self.inputs) if activation is not None else transfer.Sigmoid(self.inputs)
+		self.cleardeltas()
+
+	def feedforward(self, inputvector):
+		'''
+			Method to feedforward a vector through the layer
+			: param inputvector : vector in input feature space
+			: returns : fedforward vector mapped to output feature space
+		'''
+		self.previousinput.append(self.modifier.feedforward(inputvector))
+		self.previousoutput.append(self.activation.feedforward(configure.functions['add'](configure.functions['dot'](self.parameters['weights'], self.previousinput[-1]), self.parameters['biases'])))
+		return self.previousoutput[-1]
+
+	def backpropagate(self, outputvector):
+		'''
+			Method to backpropagate derivatives through the layer
+			: param outputvector : derivative vector in output feature space
+			: returns : backpropagated vector mapped to input feature space
+		'''
+		self.previousoutput.pop()
+		outputvector = self.activation.backpropagate(outputvector)
+		self.deltaparameters['weights'] = configure.functions['add'](self.deltaparameters['weights'], configure.functions['dot'](outputvector, configure.functions['transpose'](self.previousinput.pop())))
+		self.deltaparameters['biases'] = configure.functions['add'](self.deltaparameters['biases'], outputvector)
+		return configure.functions['dot'](configure.functions['transpose'](self.parameters['weights']), outputvector)
 
 class Normalizer(Layer):
 	'''
@@ -180,14 +228,15 @@ class Normalizer(Layer):
 		self.cleardeltas()
 		self.linearsum = None
 		self.quadraticsum = None
+		self.previousnormalized = list()
 
 	def accumulate(self, inputvector):
 		'''
 			Method to accumulate a vector in a batch of samples
 			: param inputvector : vector in input feature space
 		'''
-		self.linearsum = numpy.add(self.linearsum, inputvector)
-		self.quadraticsum = numpy.add(self.quadraticsum, numpy.square(inputvector))
+		self.linearsum = configure.functions['add'](self.linearsum, inputvector)
+		self.quadraticsum = configure.functions['add'](self.quadraticsum, configure.functions['square'](inputvector))
 		self.batch += 1
 
 	def feedforward(self, inputvector): # ignores dropout
@@ -196,10 +245,10 @@ class Normalizer(Layer):
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput = inputvector
-		self.previousnormalized = numpy.divide(numpy.subtract(self.previousinput, self.mean), numpy.sqrt(numpy.add(Normalizer.epsilon, self.variance)))
-		self.previousoutput = numpy.add(numpy.multiply(self.parameters['weights'], self.previousnormalized), self.parameters['biases'])
-		return self.previousoutput
+		self.previousinput.append(inputvector)
+		self.previousnormalized.append(configure.functions['divide'](configure.functions['subtract'](self.previousinput[-1], self.mean), configure.functions['sqrt'](configure.functions['add'](Normalizer.epsilon, self.variance))))
+		self.previousoutput.append(configure.functions['add'](configure.functions['multiply'](self.parameters['weights'], self.previousnormalized[-1]), self.parameters['biases']))
+		return self.previousoutput[-1]
 
 	def backpropagate(self, outputvector): # ignores dropout
 		'''
@@ -207,16 +256,18 @@ class Normalizer(Layer):
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
-		self.deltaparameters['weights'] = numpy.add(self.deltaparameters['weights'], numpy.multiply(outputvector, self.previousnormalized))
-		self.deltaparameters['biases'] = numpy.add(self.deltaparameters['biases'], outputvector)
-		return numpy.multiply(numpy.divide(self.parameters['weights'], self.batch), numpy.divide(numpy.subtract(self.batch - 1, numpy.square(self.previousnormalized)), numpy.sqrt(numpy.add(Normalizer.epsilon, self.variance))))
+		self.previousoutput.pop()
+		self.previousinput.pop()
+		self.deltaparameters['weights'] = configure.functions['add'](self.deltaparameters['weights'], configure.functions['multiply'](outputvector, self.previousnormalized[-1]))
+		self.deltaparameters['biases'] = configure.functions['add'](self.deltaparameters['biases'], outputvector)
+		return configure.functions['multiply'](configure.functions['divide'](self.parameters['weights'], self.batch), configure.functions['divide'](configure.functions['subtract'](self.batch - 1, configure.functions['square'](self.previousnormalized.pop())), configure.functions['sqrt'](configure.functions['add'](Normalizer.epsilon, self.variance))))
 
 	def normalize(self):
 		'''
 			Method to calculate mean, variance of accumulated vectors in a batch of samples
 		'''
-		self.mean = numpy.divide(self.linearsum, self.batch)
-		self.variance = numpy.subtract(numpy.divide(self.quadraticsum, self.batch), numpy.square(self.mean))
+		self.mean = configure.functions['divide'](self.linearsum, self.batch)
+		self.variance = configure.functions['subtract'](configure.functions['divide'](self.quadraticsum, self.batch), configure.functions['square'](self.mean))
 
 	def accumulatingsetup(self):
 		'''

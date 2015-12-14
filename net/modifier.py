@@ -3,6 +3,7 @@
 	Classes embody Gradient Descent Optimizations.
 '''
 import numpy
+from . import configure
 
 class Modifier:
 	'''
@@ -24,6 +25,7 @@ class Modifier:
 		self.rootmeansquarepropagation = None
 		self.adaptivegradient = None
 		self.resilientpropagation = None
+		self.quickpropagation = None
 
 	def applylearningrate(self, alpha = None):
 		'''
@@ -92,6 +94,12 @@ class Modifier:
 		'''
 		self.resilientpropagation = ResilientPropagation(self, tau, maximum, minimum)
 
+	def applyquickpropagation(self):
+		'''
+			Method to apply quick propagation gradient descent optimization
+		'''
+		self.quickpropagation = QuickPropagation(self)
+
 	def updateweights(self):
 		'''
 			Method to update weights based on accumulated parameter changes
@@ -101,7 +109,9 @@ class Modifier:
 			learningrate = self.decay.updateweights(learningrate)
 		deltaparameters = dict()
 		for parameter in self.layer.deltaparameters:
-			deltaparameters[parameter] = numpy.multiply(learningrate, self.layer.deltaparameters[parameter])
+			deltaparameters[parameter] = configure.functions['multiply'](learningrate, self.layer.deltaparameters[parameter])
+		if self.quickpropagation is not None:
+			deltaparameters = self.quickpropagation.updateweights(deltaparameters)
 		if self.rootmeansquarepropagation is not None:
 			deltaparameters = self.rootmeansquarepropagation.updateweights(deltaparameters)
 		if self.adaptivegradient is not None:
@@ -140,7 +150,7 @@ class Modifier:
 		'''
 			Method to prepare layer for training
 		'''
-		for attribute in ['decay', 'dropout', 'velocity', 'adaptivegain', 'adaptivegradient', 'rootmeansquarepropagation', 'resilientpropagation']:
+		for attribute in ['decay', 'dropout', 'velocity', 'adaptivegain', 'adaptivegradient', 'rootmeansquarepropagation', 'resilientpropagation', 'quickpropagation']:
 			if self.__dict__[attribute] is not None:
 				self.__dict__[attribute].trainingsetup()
 
@@ -148,7 +158,7 @@ class Modifier:
 		'''
 			Method to prepare layer for testing
 		'''
-		for attribute in ['decay', 'dropout', 'velocity', 'adaptivegain', 'adaptivegradient', 'rootmeansquarepropagation', 'resilientpropagation']:
+		for attribute in ['decay', 'dropout', 'velocity', 'adaptivegain', 'adaptivegradient', 'rootmeansquarepropagation', 'resilientpropagation', 'quickpropagation']:
 			if self.__dict__[attribute] is not None:
 				self.__dict__[attribute].testingsetup()
 
@@ -211,9 +221,9 @@ class Dropout:
 			: returns : fedforward vector mapped to output feature space
 		'''
 		if self.training:
-			return numpy.multiply(numpy.random.binomial(1, self.rho, inputvector.shape), inputvector)
+			return configure.functions['multiply'](numpy.random.binomial(1, self.rho, inputvector.shape), inputvector)
 		else:
-			return numpy.multiply(self.rho, inputvector)
+			return configure.functions['multiply'](self.rho, inputvector)
 
 	def trainingsetup(self):
 		'''
@@ -232,8 +242,8 @@ class Regularization:
 		Regularization Modifier Class
 		Mathematically, E = E + p * f(w)
 	'''
-	L1regularizer = numpy.vectorize(lambda x: 1.0 if x > 0.0 else -1.0 if x < 0.0 else 0.0)
-	L2regularizer = numpy.vectorize(lambda x: x)
+	L1regularizer = configure.functions['vectorize'](lambda x: 1.0 if x > 0.0 else -1.0 if x < 0.0 else 0.0)
+	L2regularizer = lambda x: x
 
 	def __init__(self, modifier, lamda = None, regularizer = None):
 		'''
@@ -252,7 +262,7 @@ class Regularization:
 		'''
 		deltaparameters = dict()
 		for parameter in self.modifier.layer.parameters:
-			deltaparameters[parameter] = numpy.multiply(self.lamda, self.regularizer(self.modifier.layer.parameters[parameter]))
+			deltaparameters[parameter] = configure.functions['multiply'](self.lamda, self.regularizer(self.modifier.layer.parameters[parameter]))
 		return deltaparameters
 
 class Velocity:
@@ -278,7 +288,7 @@ class Velocity:
 			Method to update weights based on accumulated parameter changes
 		'''
 		for parameter in deltaparameters:
-			self.velocityparameters[parameter] = numpy.add(numpy.multiply(self.gamma, self.velocityparameters[parameter]), deltaparameters[parameter])
+			self.velocityparameters[parameter] = configure.functions['add'](configure.functions['multiply'](self.gamma, self.velocityparameters[parameter]), deltaparameters[parameter])
 			deltaparameters[parameter] = numpy.copy(self.velocityparameters[parameter])
 		return deltaparameters
 
@@ -317,8 +327,8 @@ class AdaptiveGradient:
 			Method to update weights based on accumulated parameter changes
 		'''
 		for parameter in deltaparameters:
-			self.sumsquareparameters[parameter] = numpy.add(self.sumsquareparameters[parameter], numpy.square(self.modifier.layer.deltaparameters[parameter]))
-			deltaparameters[parameter] = numpy.divide(deltaparameters[parameter], numpy.sqrt(numpy.add(AdaptiveGradient.epsilon, self.sumsquareparameters[parameter])))
+			self.sumsquareparameters[parameter] = configure.functions['add'](self.sumsquareparameters[parameter], configure.functions['square'](self.modifier.layer.deltaparameters[parameter]))
+			deltaparameters[parameter] = configure.functions['divide'](deltaparameters[parameter], configure.functions['sqrt'](configure.functions['add'](AdaptiveGradient.epsilon, self.sumsquareparameters[parameter])))
 		return deltaparameters
 
 	def trainingsetup(self):
@@ -352,8 +362,8 @@ class AdaptiveGain:
 		self.tau = tau if tau is not None else 0.05 # default set to 0.05
 		self.maximum = maximum if maximum is not None else 100.0 # default set to 100.0
 		self.minimum = minimum if minimum is not None else 0.01 # default set to 0.01
-		self.gainadapter = numpy.vectorize(lambda x, y, z: z + self.tau if x * y > 0.0 else z * (1.0 - self.tau))
-		self.gainclipper = numpy.vectorize(lambda x: self.minimum if x < self.minimum else self.maximum if self.maximum < x else x)
+		self.gainadapter = configure.functions['vectorize'](lambda x, y, z: z + self.tau if x * y > 0.0 else z * (1.0 - self.tau))
+		self.gainclipper = configure.functions['vectorize'](lambda x: self.minimum if x < self.minimum else self.maximum if self.maximum < x else x)
 		self.gainparameters = dict()
 		self.olddeltaparameters = dict()
 		for parameter in self.modifier.layer.parameters:
@@ -367,7 +377,7 @@ class AdaptiveGain:
 		for parameter in deltaparameters:
 			self.gainparameters[parameter] = self.gainclipper(self.gainadapter(self.olddeltaparameters[parameter], self.modifier.layer.deltaparameters[parameter], self.gainparameters[parameter]))
 			self.olddeltaparameters[parameter] = numpy.copy(self.modifier.layer.deltaparameters[parameter])
-			deltaparameters[parameter] = numpy.multiply(self.gainparameters[parameter], deltaparameters[parameter])
+			deltaparameters[parameter] = configure.functions['multiply'](self.gainparameters[parameter], deltaparameters[parameter])
 		return deltaparameters
 
 	def trainingsetup(self):
@@ -404,8 +414,8 @@ class ResilientPropagation:
 		self.tau = tau if tau is not None else 0.05 # default set to 0.05
 		self.maximum = maximum if maximum is not None else 100.0 # default set to 100.0
 		self.minimum = minimum if minimum is not None else 0.01 # default set to 0.01
-		self.gainadapter = numpy.vectorize(lambda x, y, z: z + self.tau if x * y > 0.0 else z * (1.0 - self.tau))
-		self.gainclipper = numpy.vectorize(lambda x: self.minimum if x < self.minimum else self.maximum if self.maximum < x else x)
+		self.gainadapter = configure.functions['vectorize'](lambda x, y, z: z + self.tau if x * y > 0.0 else z * (1.0 - self.tau))
+		self.gainclipper = configure.functions['vectorize'](lambda x: self.minimum if x < self.minimum else self.maximum if self.maximum < x else x)
 		self.gainparameters = dict()
 		self.olddeltaparameters = dict()
 		for parameter in self.modifier.layer.parameters:
@@ -419,7 +429,7 @@ class ResilientPropagation:
 		for parameter in deltaparameters:
 			self.gainparameters[parameter] = self.gainclipper(self.gainadapter(self.olddeltaparameters[parameter], self.modifier.layer.deltaparameters[parameter], self.gainparameters[parameter]))
 			self.olddeltaparameters[parameter] = numpy.copy(self.modifier.layer.deltaparameters[parameter])
-			deltaparameters[parameter] = numpy.multiply(self.gainparameters[parameter], numpy.sign(self.modifier.layer.deltaparameters[parameter]))
+			deltaparameters[parameter] = configure.functions['multiply'](self.gainparameters[parameter], configure.functions['sign'](self.modifier.layer.deltaparameters[parameter]))
 		return deltaparameters
 
 	def trainingsetup(self):
@@ -462,8 +472,8 @@ class RootMeanSquarePropagation:
 			Method to update weights based on accumulated parameter changes
 		'''
 		for parameter in deltaparameters:
-			self.meansquareparameters[parameter] = numpy.add(numpy.multiply(self.meu, self.meansquareparameters[parameter]), numpy.multiply(1.0 - self.meu, numpy.square(self.modifier.layer.deltaparameters[parameter])))
-			deltaparameters[parameter] = numpy.divide(deltaparameters[parameter], numpy.sqrt(numpy.add(RootMeanSquarePropagation.epsilon, self.meansquareparameters[parameter])))
+			self.meansquareparameters[parameter] = configure.functions['add'](configure.functions['multiply'](self.meu, self.meansquareparameters[parameter]), configure.functions['multiply'](1.0 - self.meu, configure.functions['square'](self.modifier.layer.deltaparameters[parameter])))
+			deltaparameters[parameter] = configure.functions['divide'](deltaparameters[parameter], configure.functions['sqrt'](configure.functions['add'](RootMeanSquarePropagation.epsilon, self.meansquareparameters[parameter])))
 		return deltaparameters
 
 	def trainingsetup(self):

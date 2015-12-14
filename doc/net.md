@@ -100,6 +100,10 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			f(x) = x
 
+	* **Constant**:
+
+			f(x) = p
+
 5. **Transfer Functions**:
 
 	* **ShiftScale**:
@@ -209,7 +213,15 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 			unsupervised pretraining: Hebbian Learning
 			all modifiers are applicable to it
 
-9. **RestrictedBoltzmannMachine**:
+9. **Bidirectional Autoassociative Memory**:
+
+			f(x) = W * x
+			x = W' * f(x)
+
+			supervised pretraining: Hebbian Learning
+			all modifiers are applicable to it
+
+10. **RestrictedBoltzmannMachine**:
 
 			f(x) = W' * g(x) + b2
 			g(x)(i) = 1 / (1 + exp(-h(x)(i)))
@@ -218,7 +230,7 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 			unsupervised pretraining: Contrastive Divergence
 			all modifiers are applicable to it
 
-10. **AutoEncoder**:
+11. **AutoEncoder**:
 
 			f(x) = W2 * g(x) + b2
 			g(x)(i) = 1 / (1 + exp(-h(x)(i)))
@@ -227,7 +239,7 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 			unsupervised pretraining: Gradient Descent
 			all modifiers are applicable to it
 
-11. **Radial Basis Functions**:
+12. **Radial Basis Functions**:
 
 			r(i) = (sum_over_j((x(j) - p1(i)(j)) ^ 2)) ^ 0.5
 
@@ -258,7 +270,7 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			f(x)(i) = r(i)
 
-12. **Self Organising Maps**:
+13. **Self Organising Maps**:
 
 			f(x)(i) = 1.0 if i = argmin(r(i))
 					= 0.0 otherwise
@@ -270,11 +282,45 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			r(i) = sum_over_j(|x(j) - w(i)(j)|)
 
-	* **EuclideanSO**:
+	* **EuclideanSquaredSO**:
 
 			r(i) = sum_over_j((x(j) - w(i)(j)) ^ 2) ^ 0.5
 
-13. **Containers**:
+14. **Long Short Term Memory**:
+
+			f(x(t)) = og(x(t)) * o(x(t))
+			o(x(t)) = sigma3(h(t))
+			h(x(t)) = ig(x(t)) * i(x(t)) + fg(x(t)) * h(t-1)
+
+	* **SimpleLSTM**:
+
+			i(x(t)) = sigma2(W * x(t) + b)
+			og(x(t)) = sigma1(Wo * x(t) + bo)
+			fg(x(t)) = 1
+			ig(x(t)) = sigma1(Wi * x(t) + bi)
+
+	* **BasicLSTM**:
+
+			i(x(t)) = sigma2(W * x(t) + b)
+			og(x(t)) = sigma1(Wo * x(t) + bo)
+			fg(x(t)) = sigma1(Wf * x(t) + bf)
+			ig(x(t)) = sigma1(Wi * x(t) + bi)
+
+	* **OutputFeedbackLSTM**:
+
+			i(x(t)) = sigma2(W * [x(t), f(x(t-1))] + b)
+			og(x(t)) = sigma1(Wo * [x(t), f(x(t-1))] + bo)
+			fg(x(t)) = sigma1(Wf * [x(t), f(x(t-1))] + bf)
+			ig(x(t)) = sigma1(Wi * [x(t), f(x(t-1))] + bi)
+
+	* **PeepholeLSTM**:
+
+			i(x(t)) = sigma2(W * [x(t), f(x(t-1))] + b)
+			og(x(t)) = sigma1(Wo * [x(t), f(x(t-1)), h(t-1)] + bo)
+			fg(x(t)) = sigma1(Wf * [x(t), f(x(t-1)), h(t-1)] + bf)
+			ig(x(t)) = sigma1(Wi * [x(t), f(x(t-1)), h(t-1)] + bi)
+
+15. **Containers**:
 
 	* **Series**:
 
@@ -288,7 +334,7 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			F([h(t-1), x(t)]) = [h(t), f(x(t))]
 
-14. **Optimizers**:
+16. **Optimizers**:
 
 	* **Optimizer**: simplifies training and testing
 
