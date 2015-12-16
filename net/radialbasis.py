@@ -18,16 +18,22 @@ class RadialBasis(layer.Layer):
 			: param alpha : learning rate constant hyperparameter
 		'''
 		layer.Layer.__init__(self, inputs, outputs, alpha)
-		self.previousradius = list()
-		self.parameters = dict()
-		self.deltaparameters = dict()
-		self.parameters['weights'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.inputs), (self.outputs, self.inputs))
-		self.parameters['biases'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.inputs), (self.outputs, 1))
-		self.function = None
-		self.functionderivative = None
-		self.weightsderivative = None
-		self.biasesderivative = None
+		self.history['radius'] = list()
+		self.parameters['weights'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.dimensions['inputs']), (self.dimensions['outputs'], self.dimensions['inputs']))
+		self.parameters['biases'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.dimensions['inputs']), (self.dimensions['outputs'], 1))
+		self.__finit__()
 		self.cleardeltas()
+
+	def __finit__(self):
+		'''
+			Internal Method used to initialize function attributes
+		'''
+		if not hasattr(self, 'functions'):
+			self.functions = dict()
+		self.functions['function'] = None
+		self.functions['functionderivative'] = None
+		self.functions['weightsderivative'] = None
+		self.functions['biasesderivative'] = None
 
 	def feedforward(self, inputvector):
 		'''
@@ -35,14 +41,16 @@ class RadialBasis(layer.Layer):
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput.append(inputvector)
-		self.previousradius.append(numpy.empty((self.outputs, 1), dtype = float))
-		self.previousoutput.append(numpy.empty((self.outputs, 1), dtype = float))
-		for i in range(self.outputs):
-			centrevector = self.parameters['weights'][i].reshape((self.inputs, 1))
-			self.previousradius[-1][i][0] = configure.functions['sum'](configure.functions['square'](configure.functions['subtract'](self.previousinput[-1], centrevector))) ** 0.5
-			self.previousoutput[-1][i][0] = self.function(self.previousradius[-1][i][0], self.parameters['biases'][i][0])
-		return self.previousoutput[-1]
+		if inputvector.shape != (self.dimensions['inputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['input'].append(inputvector)
+		self.history['radius'].append(numpy.empty((self.dimensions['outputs'], 1), dtype = float))
+		self.history['output'].append(numpy.empty((self.dimensions['outputs'], 1), dtype = float))
+		for i in range(self.dimensions['outputs']):
+			centrevector = self.parameters['weights'][i].reshape((self.dimensions['inputs'], 1))
+			self.history['radius'][-1][i][0] = configure.functions['sum'](configure.functions['square'](configure.functions['subtract'](self.history['input'][-1], centrevector))) ** 0.5
+			self.history['output'][-1][i][0] = self.functions['function'](self.history['radius'][-1][i][0], self.parameters['biases'][i][0])
+		return self.history['output'][-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -50,15 +58,17 @@ class RadialBasis(layer.Layer):
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
-		deltainputs = numpy.zeros((self.inputs, 1), dtype = float)
-		for i in range(self.outputs):
-			centrevector = self.parameters['weights'][i].reshape((self.inputs, 1))
-			deltainputs = configure.functions['add'](deltainputs, configure.functions['multiply'](outputvector[i][0], self.functionderivative(self.previousradius[-1][i][0], self.previousinput[-1], centrevector, self.parameters['biases'][i][0], self.previousoutput[-1][i][0])))
-			self.deltaparameters['weights'][i] = configure.functions['add'](self.deltaparameters['weights'][i], configure.functions['multiply'](outputvector[i][0], configure.functions['transpose'](self.weightsderivative(self.previousradius[-1][i][0], self.previousinput[-1], centrevector, self.parameters['biases'][i][0], self.previousoutput[-1][i][0]))))
-			self.deltaparameters['biases'][i][0] += outputvector[i][0] * self.biasesderivative(self.previousradius[-1][i][0], self.previousinput[-1], centrevector, self.parameters['biases'][i][0], self.previousoutput[-1][i][0])
-		self.previousoutput.pop()
-		self.previousradius.pop()
-		self.previousinput.pop()
+		if outputvector.shape != (self.dimensions['outputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		deltainputs = numpy.zeros((self.dimensions['inputs'], 1), dtype = float)
+		for i in range(self.dimensions['outputs']):
+			centrevector = self.parameters['weights'][i].reshape((self.dimensions['inputs'], 1))
+			deltainputs = configure.functions['add'](deltainputs, configure.functions['multiply'](outputvector[i][0], self.functions['functionderivative'](self.history['radius'][-1][i][0], self.history['input'][-1], centrevector, self.parameters['biases'][i][0], self.history['output'][-1][i][0])))
+			self.deltaparameters['weights'][i] = configure.functions['add'](self.deltaparameters['weights'][i], configure.functions['multiply'](outputvector[i][0], configure.functions['transpose'](self.functions['weightsderivative'](self.history['radius'][-1][i][0], self.history['input'][-1], centrevector, self.parameters['biases'][i][0], self.history['output'][-1][i][0]))))
+			self.deltaparameters['biases'][i][0] += outputvector[i][0] * self.functions['biasesderivative'](self.history['radius'][-1][i][0], self.history['input'][-1], centrevector, self.parameters['biases'][i][0], self.history['output'][-1][i][0])
+		self.history['output'].pop()
+		self.history['radius'].pop()
+		self.history['input'].pop()
 		return deltainputs
 
 	def pretrain(self, trainingset, threshold = 0.0001, iterations = 10, criterion = None):
@@ -71,9 +81,9 @@ class RadialBasis(layer.Layer):
 			: returns : maximum distance from cluster centre on termination
 		'''
 		if criterion is None:
-			criterion = error.MeanSquared(self.inputs)
+			criterion = error.MeanSquared(self.dimensions['inputs'])
 		for iterations in range(iterations):
-			clusters = [[self.parameters['weights'][i].reshape((self.inputs, 1))] for i in range(self.outputs)]
+			clusters = [[self.parameters['weights'][i].reshape((self.dimensions['inputs'], 1))] for i in range(self.dimensions['outputs'])]
 			for point in trainingset:
 				bestdistance = float('inf')
 				bestindex = -1
@@ -112,10 +122,17 @@ class GaussianRB(RadialBasis):
 			: param alpha : learning rate constant hyperparameter
 		'''
 		RadialBasis.__init__(self, inputs, outputs, alpha)
-		self.function = lambda inputradius, coefficient: configure.functions['exp'](-inputradius / coefficient ** 2)
-		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](2.0 * output / (coefficient ** 2), configure.functions['subtract'](centrevector, inputvector))
-		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](2.0 * output / (coefficient ** 2), configure.functions['subtract'](inputvector, centrevector))
-		self.biasesderivative = lambda inputradius, inputvector, centrevector, coefficient, output: 2.0 * output * configure.functions['sum'](configure.functions['square'](configure.functions['subtract'](inputvector, centrevector))) / (coefficient ** 3)
+
+	def __finit__(self):
+		'''
+			Internal Method used to initialize function attributes
+		'''
+		if not hasattr(self, 'functions'):
+			self.functions = dict()
+		self.functions['function'] = lambda inputradius, coefficient: configure.functions['exp'](-inputradius / coefficient ** 2)
+		self.functions['functionderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](2.0 * output / (coefficient ** 2), configure.functions['subtract'](centrevector, inputvector))
+		self.functions['weightsderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](2.0 * output / (coefficient ** 2), configure.functions['subtract'](inputvector, centrevector))
+		self.functions['biasesderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: 2.0 * output * configure.functions['sum'](configure.functions['square'](configure.functions['subtract'](inputvector, centrevector))) / (coefficient ** 3)
 
 class MultiQuadraticRB(RadialBasis):
 	'''
@@ -131,11 +148,18 @@ class MultiQuadraticRB(RadialBasis):
 			: param beta : p3, as given in its mathematical expression
 		'''
 		RadialBasis.__init__(self, inputs, outputs, alpha)
-		self.beta = beta if beta is not None else 0.5
-		self.function = lambda inputradius, coefficient: (inputradius ** 2 + coefficient ** 2) ** self.beta
-		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](self.beta * (inputradius ** 2 + coefficient ** 2) ** (self.beta - 1.0) * 2.0, configure.functions['subtract'](inputvector, centrevector))
-		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](self.beta * (inputradius ** 2 + coefficient ** 2) ** (self.beta - 1.0) * 2.0, configure.functions['subtract'](centrevector, inputvector))
-		self.biasesderivative = lambda inputradius, inputvector, centrevector, coefficient, output: self.beta * (inputradius ** 2 + coefficient ** 2) ** (self.beta - 1.0) * 2.0 * coefficient
+		self.metaparameters['beta'] = beta if beta is not None else 0.5
+
+	def __finit__(self):
+		'''
+			Internal Method used to initialize function attributes
+		'''
+		if not hasattr(self, 'functions'):
+			self.functions = dict()
+		self.functions['function'] = lambda inputradius, coefficient: (inputradius ** 2 + coefficient ** 2) ** self.metaparameters['beta']
+		self.functions['functionderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](self.metaparameters['beta'] * (inputradius ** 2 + coefficient ** 2) ** (self.metaparameters['beta'] - 1.0) * 2.0, configure.functions['subtract'](inputvector, centrevector))
+		self.functions['weightsderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](self.metaparameters['beta'] * (inputradius ** 2 + coefficient ** 2) ** (self.metaparameters['beta'] - 1.0) * 2.0, configure.functions['subtract'](centrevector, inputvector))
+		self.functions['biasesderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: self.metaparameters['beta'] * (inputradius ** 2 + coefficient ** 2) ** (self.metaparameters['beta'] - 1.0) * 2.0 * coefficient
 
 class InverseMultiQuadraticRB(RadialBasis):
 	'''
@@ -151,11 +175,18 @@ class InverseMultiQuadraticRB(RadialBasis):
 			: param beta : p3, as given in its mathematical expression
 		'''
 		RadialBasis.__init__(self, inputs, outputs, alpha)
-		self.beta = beta if beta is not None else 0.5
-		self.function = lambda inputradius, coefficient: (inputradius ** 2 + coefficient ** 2) ** (-self.beta)
-		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](-self.beta * (inputradius ** 2 + coefficient ** 2) ** (-self.beta - 1.0) * 2.0, configure.functions['subtract'](inputvector, centrevector))
-		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](-self.beta * (inputradius ** 2 + coefficient ** 2) ** (-self.beta - 1.0) * 2.0, configure.functions['subtract'](centrevector, inputvector))
-		self.biasesderivative = lambda inputradius, inputvector, centrevector, coefficient, output: -self.beta * (inputradius ** 2 + coefficient ** 2) ** (-self.beta - 1.0) * 2.0 * coefficient
+		self.metaparameters['beta'] = beta if beta is not None else 0.5
+
+	def __finit__(self):
+		'''
+			Internal Method used to initialize function attributes
+		'''
+		if not hasattr(self, 'functions'):
+			self.functions = dict()
+		self.functions['function'] = lambda inputradius, coefficient: (inputradius ** 2 + coefficient ** 2) ** (-self.metaparameters['beta'])
+		self.functions['functionderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](-self.metaparameters['beta'] * (inputradius ** 2 + coefficient ** 2) ** (-self.metaparameters['beta'] - 1.0) * 2.0, configure.functions['subtract'](inputvector, centrevector))
+		self.functions['weightsderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](-self.metaparameters['beta'] * (inputradius ** 2 + coefficient ** 2) ** (-self.metaparameters['beta'] - 1.0) * 2.0, configure.functions['subtract'](centrevector, inputvector))
+		self.functions['biasesderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: -self.metaparameters['beta'] * (inputradius ** 2 + coefficient ** 2) ** (-self.metaparameters['beta'] - 1.0) * 2.0 * coefficient
 
 class ThinPlateSplineRB(RadialBasis):
 	'''
@@ -170,10 +201,17 @@ class ThinPlateSplineRB(RadialBasis):
 			: param alpha : learning rate constant hyperparameter
 		'''
 		RadialBasis.__init__(self, inputs, outputs, alpha)
-		self.function = lambda inputradius, coefficient: inputradius ** 2 * configure.functions['log'](inputradius)
-		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply']((2.0 * configure.functions['log'](inputradius) + 1.0), configure.functions['subtract'](inputvector, centrevector))
-		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply']((2.0 * configure.functions['log'](inputradius) + 1.0), configure.functions['subtract'](centrevector, inputvector))
-		self.biasesderivative = lambda inputradius, inputvector, centrevector, coefficient, output: 0.0
+
+	def __finit__(self):
+		'''
+			Internal Method used to initialize function attributes
+		'''
+		if not hasattr(self, 'functions'):
+			self.functions = dict()
+		self.functions['function'] = lambda inputradius, coefficient: inputradius ** 2 * configure.functions['log'](inputradius)
+		self.functions['functionderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply']((2.0 * configure.functions['log'](inputradius) + 1.0), configure.functions['subtract'](inputvector, centrevector))
+		self.functions['weightsderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply']((2.0 * configure.functions['log'](inputradius) + 1.0), configure.functions['subtract'](centrevector, inputvector))
+		self.functions['biasesderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: 0.0
 
 class CubicRB(RadialBasis):
 	'''
@@ -188,10 +226,17 @@ class CubicRB(RadialBasis):
 			: param alpha : learning rate constant hyperparameter
 		'''
 		RadialBasis.__init__(self, inputs, outputs, alpha)
-		self.function = lambda inputradius, coefficient: inputradius ** 3
-		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](3.0 * inputradius, configure.functions['subtract'](inputvector, centrevector))
-		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](3.0 * inputradius, configure.functions['subtract'](centrevector, inputvector))
-		self.biasesderivative = lambda inputradius, inputvector, centrevector, coefficient, output: 0.0
+
+	def __finit__(self):
+		'''
+			Internal Method used to initialize function attributes
+		'''
+		if not hasattr(self, 'functions'):
+			self.functions = dict()
+		self.functions['function'] = lambda inputradius, coefficient: inputradius ** 3
+		self.functions['functionderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](3.0 * inputradius, configure.functions['subtract'](inputvector, centrevector))
+		self.functions['weightsderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['multiply'](3.0 * inputradius, configure.functions['subtract'](centrevector, inputvector))
+		self.functions['biasesderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: 0.0
 
 class LinearRB(RadialBasis):
 	'''
@@ -206,7 +251,14 @@ class LinearRB(RadialBasis):
 			: param alpha : learning rate constant hyperparameter
 		'''
 		RadialBasis.__init__(self, inputs, outputs, alpha)
-		self.function = lambda inputradius, coefficient: inputradius
-		self.functionderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['divide'](configure.functions['subtract'](inputvector, centrevector), output)
-		self.weightsderivative = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['divide'](configure.functions['subtract'](centrevector, inputvector), output)
-		self.biasesderivative = lambda inputradius, inputvector, centrevector, coefficient, output: 0.0
+
+	def __finit__(self):
+		'''
+			Internal Method used to initialize function attributes
+		'''
+		if not hasattr(self, 'functions'):
+			self.functions = dict()
+		self.functions['function'] = lambda inputradius, coefficient: inputradius
+		self.functions['functionderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['divide'](configure.functions['subtract'](inputvector, centrevector), output)
+		self.functions['weightsderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: configure.functions['divide'](configure.functions['subtract'](centrevector, inputvector), output)
+		self.functions['biasesderivative'] = lambda inputradius, inputvector, centrevector, coefficient, output: 0.0

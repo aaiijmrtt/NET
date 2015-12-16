@@ -1,4 +1,4 @@
-#Classes
+# Classes
 
 Each class (except Optimizers and Layer Modifiers) has feedforward and
 backpropagate methods, which return the forwardfed output and the
@@ -72,9 +72,13 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 			msw(t + 1) = p1 * msw(t) + (1 - p1) * (dE(t) / dw(t)) ^ 2
 			w(t + 1) = w(t) - p2 / (msw(t + 1) + e) ^ 0.5 * (dE(t) / dw(t))
 
-	* **Regularization**:
+	* **L1Regularization**:
 
-			E = E + p * f(w)
+			E = E + sum(|w|)
+
+	* **L2Regularization**:
+
+			E = E + sum(0.5 * w ^ 2)
 
 	* **Dropout**:
 

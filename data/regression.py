@@ -1,4 +1,8 @@
-import numpy, random
+'''
+	Module containing Regression Dataset Loaders.
+'''
+import random
+import numpy
 from . import tools
 
 def datasetbostonhousing(shuffle = None):

@@ -4,8 +4,9 @@
 	and Hyperparameter Optimization Algorithms.
 '''
 import numpy, copy
+from . import base
 
-class Optimizer:
+class Optimizer(base.Net):
 	'''
 		Optimizer Class
 	'''
@@ -58,7 +59,7 @@ class Optimizer:
 			for inputvector, outputvector in self.validationset:
 				self.error[0][0] -= outputvector[numpy.argmax(self.net.feedforward(inputvector))][0]
 		else:
-			self.error = numpy.zeros((self.net.outputs, 1), dtype = float)
+			self.error = numpy.zeros((self.net.dimensions['outputs'], 1), dtype = float)
 			for inputvector, outputvector in self.validationset:
 				self.error = numpy.add(self.error, self.criterion(self.net.feedforward(inputvector), outputvector))
 		self.error = numpy.divide(self.error, len(self.validationset))
@@ -78,7 +79,7 @@ class Optimizer:
 			for inputvector, outputvector in self.testingset:
 				self.error[0][0] -= outputvector[numpy.argmax(self.net.feedforward(inputvector))][0]
 		else:
-			self.error = numpy.zeros((self.net.outputs, 1), dtype = float)
+			self.error = numpy.zeros((self.net.dimensions['outputs'], 1), dtype = float)
 			for inputvector, outputvector in self.testingset:
 				self.error = numpy.add(self.error, self.criterion(self.net.feedforward(inputvector), outputvector))
 		self.error = numpy.divide(self.error, len(self.testingset))

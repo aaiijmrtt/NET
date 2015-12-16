@@ -1,7 +1,8 @@
 '''
 	Module containing Logical Function Generators.
 '''
-import numpy, random
+import random
+import numpy
 from . import tools
 
 def datasetand(size = None, variables = None, shuffle = None):

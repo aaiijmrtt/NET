@@ -19,7 +19,7 @@ class HopfieldNetwork(layer.Layer):
 			: param alpha : learning rate constant hyperparameter
 		'''
 		layer.Layer.__init__(self, inputs, inputs, alpha)
-		self.parameters['weights'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.inputs), (self.inputs, self.inputs))
+		self.parameters['weights'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.dimensions['inputs']), (self.dimensions['outputs'], self.dimensions['inputs']))
 		self.parameters['weights'] = configure.functions['add'](self.parameters['weights'], configure.functions['transpose'](self.parameters['weights']))
 		self.cleardeltas()
 
@@ -27,8 +27,8 @@ class HopfieldNetwork(layer.Layer):
 		'''
 			Method to clear accumulated parameter changes
 		'''
-		self.deltaparameters = self.modifier.cleardeltas()
-		for i in range(self.inputs):
+		self.deltaparameters = self.units['modifier'].cleardeltas()
+		for i in range(self.dimensions['inputs']):
 			self.parameters['weights'][i][i] = 0.0
 
 	def updateweights(self):
@@ -36,7 +36,7 @@ class HopfieldNetwork(layer.Layer):
 			Method to update weights based on accumulated parameter changes
 		'''
 		self.deltaparameters['weights'] = configure.functions['add'](self.deltaparameters['weights'], configure.functions['transpose'](self.deltaparameters['weights']))
-		self.deltaparameters = self.modifier.updateweights()
+		self.deltaparameters = self.units['modifier'].updateweights()
 		for parameter in self.parameters:
 			self.parameters[parameter] = configure.functions['subtract'](self.parameters[parameter], self.deltaparameters[parameter])
 		self.cleardeltas()
@@ -47,9 +47,11 @@ class HopfieldNetwork(layer.Layer):
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput.append(self.modifier.feedforward(inputvector))
-		self.previousoutput.append(configure.functions['dot'](self.parameters['weights'], self.previousinput[-1]))
-		return self.previousoutput[-1]
+		if inputvector.shape != (self.dimensions['inputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['input'].append(self.units['modifier'].feedforward(inputvector))
+		self.history['output'].append(configure.functions['dot'](self.parameters['weights'], self.history['input'][-1]))
+		return self.history['output'][-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -57,8 +59,10 @@ class HopfieldNetwork(layer.Layer):
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
-		self.previousoutput.pop()
-		self.deltaparameters['weights'] = configure.functions['add'](self.deltaparameters['weights'], configure.functions['dot'](outputvector, configure.functions['transpose'](self.previousinput.pop())))
+		if outputvector.shape != (self.dimensions['outputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['output'].pop()
+		self.deltaparameters['weights'] = configure.functions['add'](self.deltaparameters['weights'], configure.functions['dot'](outputvector, configure.functions['transpose'](self.history['input'].pop())))
 		return configure.functions['dot'](configure.functions['transpose'](self.parameters['weights']), outputvector)
 
 	def pretrain(self, trainingset, criterion = None):
@@ -69,13 +73,13 @@ class HopfieldNetwork(layer.Layer):
 			: returns : elementwise reconstruction error on termination
 		'''
 		if criterion is None:
-			criterion = error.MeanSquared(self.inputs)
-		self.parameters['weights'] = numpy.zeros((self.inputs, self.inputs), dtype = float)
+			criterion = error.MeanSquared(self.dimensions['inputs'])
+		self.parameters['weights'] = numpy.zeros((self.dimensions['inputs'], self.dimensions['inputs']), dtype = float)
 		for vector in trainingset:
 			self.parameters['weights'] = configure.functions['add'](self.parameters['weights'], configure.functions['dot'](vector, configure.functions['transpose'](vector)))
 		self.parameters['weights'] = configure.functions['divide'](self.parameters['weights'], len(trainingset))
 		self.updateweights()
-		errorvector = numpy.zeros((self.outputs, 1), dtype = float)
+		errorvector = numpy.zeros((self.dimensions['outputs'], 1), dtype = float)
 		for vector in trainingset:
 			errorvector = configure.functions['add'](errorvector, criterion.compute(self.feedforward(vector), vector))
 		errorvector = configure.functions['divide'](errorvector, len(trainingset))

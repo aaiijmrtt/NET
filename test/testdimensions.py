@@ -16,8 +16,8 @@ class DimensionsTestCase(unittest.TestCase):
 		for singleparameterclass in self.singleparameterclasses:
 			for i in range(1, 500):
 				singleparameter = singleparameterclass(i)
-				self.assertEqual(singleparameter.feedforward(numpy.random.rand(singleparameter.inputs, 1)).shape, (singleparameter.outputs, 1), 'feedforward dimensions error in class %s' %singleparameterclass)
-				self.assertEqual(singleparameter.backpropagate(numpy.random.rand(singleparameter.outputs, 1)).shape, (singleparameter.inputs, 1), 'backpropagate dimensions error in class %s' %singleparameterclass)
+				self.assertEqual(singleparameter.feedforward(numpy.random.rand(singleparameter.dimensions['inputs'], 1)).shape, (singleparameter.dimensions['outputs'], 1), 'feedforward dimensions error in class %s' %singleparameterclass)
+				self.assertEqual(singleparameter.backpropagate(numpy.random.rand(singleparameter.dimensions['outputs'], 1)).shape, (singleparameter.dimensions['inputs'], 1), 'backpropagate dimensions error in class %s' %singleparameterclass)
 				singleparameter = None
 
 	def testdoubleparameterclasses(self):
@@ -25,8 +25,8 @@ class DimensionsTestCase(unittest.TestCase):
 			for i in range(1, 35):
 				for j in range(1, 35):
 					doubleparameter = doubleparameterclass(i, j)
-					self.assertEqual(doubleparameter.feedforward(numpy.random.rand(doubleparameter.inputs, 1)).shape, (doubleparameter.outputs, 1), 'feedforward dimensions error in class %s' %doubleparameterclass)
-					self.assertEqual(doubleparameter.backpropagate(numpy.random.rand(doubleparameter.outputs, 1)).shape, (doubleparameter.inputs, 1), 'backpropagate dimensions error in class %s' %doubleparameterclass)
+					self.assertEqual(doubleparameter.feedforward(numpy.random.rand(doubleparameter.dimensions['inputs'], 1)).shape, (doubleparameter.dimensions['outputs'], 1), 'feedforward dimensions error in class %s' %doubleparameterclass)
+					self.assertEqual(doubleparameter.backpropagate(numpy.random.rand(doubleparameter.dimensions['outputs'], 1)).shape, (doubleparameter.dimensions['inputs'], 1), 'backpropagate dimensions error in class %s' %doubleparameterclass)
 					doubleparameter = None
 
 	def testquadrupleparameterclasses(self):
@@ -36,8 +36,8 @@ class DimensionsTestCase(unittest.TestCase):
 					for k in range(1, 3):
 						for l in range(1, min(i, j)):
 							quadrupleparameter = quadrupleparameterclass(i, j, k, l)
-							self.assertEqual(quadrupleparameter.feedforward(numpy.random.rand(quadrupleparameter.inputs, 1)).shape, (quadrupleparameter.outputs, 1), 'feedforward dimensions error in class %s' %quadrupleparameterclass)
-							self.assertEqual(quadrupleparameter.backpropagate(numpy.random.rand(quadrupleparameter.outputs, 1)).shape, (quadrupleparameter.inputs, 1), 'backpropagate dimensions error in class %s' %quadrupleparameterclass)
+							self.assertEqual(quadrupleparameter.feedforward(numpy.random.rand(quadrupleparameter.dimensions['inputs'], 1)).shape, (quadrupleparameter.dimensions['outputs'], 1), 'feedforward dimensions error in class %s' %quadrupleparameterclass)
+							self.assertEqual(quadrupleparameter.backpropagate(numpy.random.rand(quadrupleparameter.dimensions['outputs'], 1)).shape, (quadrupleparameter.dimensions['inputs'], 1), 'backpropagate dimensions error in class %s' %quadrupleparameterclass)
 							quadrupleparameter = None
 
 	def testseriesclass(self):
@@ -47,8 +47,8 @@ class DimensionsTestCase(unittest.TestCase):
 					doubleseries = net.Series()
 					doubleseries.addlayer(net.Linear(i, j))
 					doubleseries.addlayer(net.Linear(j, k))
-					self.assertEqual(doubleseries.feedforward(numpy.random.rand(doubleseries.inputs, 1)).shape, (doubleseries.outputs, 1), 'feedforward dimensions error in class %s' %net.Series)
-					self.assertEqual(doubleseries.backpropagate(numpy.random.rand(doubleseries.outputs, 1)).shape, (doubleseries.inputs, 1), 'backpropagate dimensions error in class %s' %net.Series)
+					self.assertEqual(doubleseries.feedforward(numpy.random.rand(doubleseries.dimensions['inputs'], 1)).shape, (doubleseries.dimensions['outputs'], 1), 'feedforward dimensions error in class %s' %net.Series)
+					self.assertEqual(doubleseries.backpropagate(numpy.random.rand(doubleseries.dimensions['outputs'], 1)).shape, (doubleseries.dimensions['inputs'], 1), 'backpropagate dimensions error in class %s' %net.Series)
 					doubleseries = None
 
 	def testparallelclass(self):
@@ -59,8 +59,8 @@ class DimensionsTestCase(unittest.TestCase):
 						doubleparallel = net.Parallel()
 						doubleparallel.addlayer(net.Linear(i, j))
 						doubleparallel.addlayer(net.Linear(k, l))
-						self.assertEqual(doubleparallel.feedforward(numpy.random.rand(doubleparallel.inputs, 1)).shape, (doubleparallel.outputs, 1), 'feedforward dimensions error in class %s' %net.Parallel)
-						self.assertEqual(doubleparallel.backpropagate(numpy.random.rand(doubleparallel.outputs, 1)).shape, (doubleparallel.inputs, 1), 'backpropagate dimensions error in class %s' %net.Parallel)
+						self.assertEqual(doubleparallel.feedforward(numpy.random.rand(doubleparallel.dimensions['inputs'], 1)).shape, (doubleparallel.dimensions['outputs'], 1), 'feedforward dimensions error in class %s' %net.Parallel)
+						self.assertEqual(doubleparallel.backpropagate(numpy.random.rand(doubleparallel.dimensions['outputs'], 1)).shape, (doubleparallel.dimensions['inputs'], 1), 'backpropagate dimensions error in class %s' %net.Parallel)
 						doubleparallel = None
 
 	def testrecurrentclass(self):
@@ -69,8 +69,8 @@ class DimensionsTestCase(unittest.TestCase):
 				for k in range(1, min(i, j)):
 					singlerecurrent = net.Recurrent(k, net.Linear(i, j))
 					singlerecurrent.timingsetup()
-					self.assertEqual(singlerecurrent.feedforward(numpy.random.rand(singlerecurrent.inputs, 1)).shape, (singlerecurrent.outputs, 1), 'feedforward dimensions error in class %s' %net.Recurrent)
-					self.assertEqual(singlerecurrent.backpropagate(numpy.random.rand(singlerecurrent.outputs, 1)).shape, (singlerecurrent.inputs, 1), 'backpropagate dimensions error in class %s' %net.Recurrent)
+					self.assertEqual(singlerecurrent.feedforward(numpy.random.rand(singlerecurrent.dimensions['inputs'], 1)).shape, (singlerecurrent.dimensions['outputs'], 1), 'feedforward dimensions error in class %s' %net.Recurrent)
+					self.assertEqual(singlerecurrent.backpropagate(numpy.random.rand(singlerecurrent.dimensions['outputs'], 1)).shape, (singlerecurrent.dimensions['inputs'], 1), 'backpropagate dimensions error in class %s' %net.Recurrent)
 					singlerecurrent = None
 
 	def tearDown(self):

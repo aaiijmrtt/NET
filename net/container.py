@@ -4,8 +4,9 @@
 	used to define combinations of Layers.
 '''
 import numpy
+from . import base
 
-class Container:
+class Container(base.Net):
 	'''
 		Base class for all Containers
 	'''
@@ -16,11 +17,15 @@ class Container:
 		'''
 			Constructor
 		'''
+		if not hasattr(self, 'dimensions'):
+			self.dimensions = dict()
+		self.dimensions['inputs'] = None
+		self.dimensions['outputs'] = None
+		if not hasattr(self, 'history'):
+			self.history = dict()
+		self.history['input'] = list()
+		self.history['output'] = list()
 		self.layers = list()
-		self.inputs = None
-		self.outputs = None
-		self.previousinput = list()
-		self.previousoutput = list()
 
 	def accumulate(self, inputvector):
 		'''
@@ -114,15 +119,23 @@ class Container:
 			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
 				layer.applyvelocity(gamma)
 
-	def applyregularization(self, lamda = None, regularizer = None):
+	def applyl1regularization(self, lamda = None):
 		'''
 			Method to apply regularization to prevent overfitting
 			: param lamda : regularization rate constant hyperparameter
-			: param regularizer : regularization function hyperparameter
 		'''
 		for layer in self.layers:
 			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
-				layer.applyregularization(lamda, regularizer)
+				layer.applyl1regularization(lamda)
+
+	def applyl2regularization(self, lamda = None):
+		'''
+			Method to apply regularization to prevent overfitting
+			: param lamda : regularization rate constant hyperparameter
+		'''
+		for layer in self.layers:
+			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
+				layer.applyl2regularization(lamda)
 
 	def applydropout(self, rho = None):
 		'''
@@ -172,14 +185,6 @@ class Container:
 			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
 				layer.applyresilientpropagation(tau, maximum, minimum)
 
-	def applyquickpropagation(self):
-		'''
-			Method to apply quick propagation gradient descent optimization
-		'''
-		for layer in self.layers:
-			if layer.__class__.__name__ in Container.listoflayers + Container.listofcontainers:
-				layer.applyquickpropagation()
-
 class Series(Container):
 	'''
 		Series Container
@@ -197,9 +202,9 @@ class Series(Container):
 			: param layer : layer to be added to container
 		'''
 		self.layers.append(layer)
-		self.outputs = self.layers[-1].outputs
-		if self.inputs is None:
-			self.inputs = self.layers[-1].inputs
+		self.dimensions['outputs'] = self.layers[-1].dimensions['outputs']
+		if self.dimensions['inputs'] is None:
+			self.dimensions['inputs'] = self.layers[-1].dimensions['inputs']
 
 	def feedforward(self, inputvector):
 		'''
@@ -207,11 +212,13 @@ class Series(Container):
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput.append(inputvector)
-		self.previousoutput.append(self.previousinput[-1])
+		if inputvector.shape != (self.dimensions['inputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['input'].append(inputvector)
+		self.history['output'].append(self.history['input'][-1])
 		for layer in self.layers:
-			self.previousoutput[-1] = layer.feedforward(self.previousoutput[-1])
-		return self.previousoutput[-1]
+			self.history['output'][-1] = layer.feedforward(self.history['output'][-1])
+		return self.history['output'][-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -219,8 +226,10 @@ class Series(Container):
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
-		self.previousoutput.pop()
-		self.previousinput.pop()
+		if outputvector.shape != (self.dimensions['outputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['output'].pop()
+		self.history['input'].pop()
 		for layer in reversed(self.layers):
 			outputvector = layer.backpropagate(outputvector)
 		return outputvector
@@ -235,10 +244,10 @@ class Parallel(Container):
 			Constructor
 		'''
 		Container.__init__(self)
-		self.inputdimensions = [0]
-		self.outputdimensions = [0]
-		self.inputs = 0
-		self.outputs = 0
+		self.dimensions['inputsplit'] = [0]
+		self.dimensions['outputsplit'] = [0]
+		self.dimensions['inputs'] = 0
+		self.dimensions['outputs'] = 0
 
 	def addlayer(self, layer):
 		'''
@@ -246,10 +255,10 @@ class Parallel(Container):
 			: param layer : layer to be added to container
 		'''
 		self.layers.append(layer)
-		self.inputs += self.layers[-1].inputs
-		self.outputs += self.layers[-1].outputs
-		self.inputdimensions.append(self.inputdimensions[-1] + self.layers[-1].inputs)
-		self.outputdimensions.append(self.outputdimensions[-1] + self.layers[-1].outputs)
+		self.dimensions['inputs'] += self.layers[-1].dimensions['inputs']
+		self.dimensions['outputs'] += self.layers[-1].dimensions['outputs']
+		self.dimensions['inputsplit'].append(self.dimensions['inputsplit'][-1] + self.layers[-1].dimensions['inputs'])
+		self.dimensions['outputsplit'].append(self.dimensions['outputsplit'][-1] + self.layers[-1].dimensions['outputs'])
 
 	def feedforward(self, inputvector):
 		'''
@@ -257,12 +266,14 @@ class Parallel(Container):
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput.append(inputvector)
+		if inputvector.shape != (self.dimensions['inputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['input'].append(inputvector)
 		layeroutputs = list()
-		for layer, layerinput in zip(self.layers, numpy.split(self.previousinput[-1], self.inputdimensions[1: -1])):
+		for layer, layerinput in zip(self.layers, numpy.split(self.history['input'][-1], self.dimensions['inputsplit'][1: -1])):
 			layeroutputs.append(layer.feedforward(layerinput))
-		self.previousoutput.append(numpy.concatenate(layeroutputs))
-		return self.previousoutput[-1]
+		self.history['output'].append(numpy.concatenate(layeroutputs))
+		return self.history['output'][-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -270,10 +281,12 @@ class Parallel(Container):
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
-		self.previousoutput.pop()
-		self.previousinput.pop()
+		if outputvector.shape != (self.dimensions['outputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['output'].pop()
+		self.history['input'].pop()
 		layerdeltas = list()
-		for layer, layeroutput in zip(self.layers, numpy.split(outputvector, self.outputdimensions[1: -1])):
+		for layer, layeroutput in zip(self.layers, numpy.split(outputvector, self.dimensions['outputsplit'][1: -1])):
 			layerdeltas.append(layer.backpropagate(layeroutput))
 		return numpy.concatenate(layerdeltas)
 
@@ -290,11 +303,11 @@ class Recurrent(Container):
 		'''
 		Container.__init__(self)
 		self.layers.append(layer)
-		self.hiddens = hiddens
-		self.inputs = self.layers[0].inputs - self.hiddens
-		self.outputs = self.layers[0].outputs - self.hiddens
-		self.previoushiddens = [numpy.zeros((self.hiddens, 1), dtype = float)]
-		self.previousdeltas = [numpy.zeros((self.hiddens, 1), dtype = float)]
+		self.dimensions['hiddens'] = hiddens
+		self.dimensions['inputs'] = self.layers[0].dimensions['inputs'] - self.dimensions['hiddens']
+		self.dimensions['outputs'] = self.layers[0].dimensions['outputs'] - self.dimensions['hiddens']
+		self.history['hiddens'] = [numpy.zeros((self.dimensions['hiddens'], 1), dtype = float)]
+		self.history['deltas'] = [numpy.zeros((self.dimensions['hiddens'], 1), dtype = float)]
 
 	def feedforward(self, inputvector):
 		'''
@@ -302,12 +315,14 @@ class Recurrent(Container):
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput.append(inputvector)
-		outputvector = self.layers[0].feedforward(numpy.concatenate([self.previoushiddens[-1], self.previousinput[-1]]))
-		hiddens, output = numpy.split(outputvector, [self.hiddens])
-		self.previoushiddens.append(hiddens)
-		self.previousoutput.append(output)
-		return self.previousoutput[-1]
+		if inputvector.shape != (self.dimensions['inputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['input'].append(inputvector)
+		outputvector = self.layers[0].feedforward(numpy.concatenate([self.history['hiddens'][-1], self.history['input'][-1]]))
+		hiddens, output = numpy.split(outputvector, [self.dimensions['hiddens']])
+		self.history['hiddens'].append(hiddens)
+		self.history['output'].append(output)
+		return self.history['output'][-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -315,17 +330,19 @@ class Recurrent(Container):
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
-		self.previousoutput.pop()
-		self.previousinput.pop()
-		deltavector = self.layers[0].backpropagate(numpy.concatenate([self.previousdeltas[-1], outputvector]))
-		deltahidden, deltainput = numpy.split(deltavector, [self.hiddens])
-		self.previousdeltas.append(deltahidden)
+		if outputvector.shape != (self.dimensions['outputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['output'].pop()
+		self.history['input'].pop()
+		deltavector = self.layers[0].backpropagate(numpy.concatenate([self.history['deltas'][-1], outputvector]))
+		deltahidden, deltainput = numpy.split(deltavector, [self.dimensions['hiddens']])
+		self.history['deltas'].append(deltahidden)
 		return deltainput
 
 	def timingsetup(self):
 		'''
 			Method to prepare layer for time recurrence
 		'''
-		self.previoushiddens = [numpy.zeros((self.hiddens, 1), dtype = float)]
-		self.previousdeltas = [numpy.zeros((self.hiddens, 1), dtype = float)]
+		self.history['hiddens'] = [numpy.zeros((self.dimensions['hiddens'], 1), dtype = float)]
+		self.history['deltas'] = [numpy.zeros((self.dimensions['hiddens'], 1), dtype = float)]
 		Container.timingsetup(self)

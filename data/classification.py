@@ -1,4 +1,8 @@
-import numpy, random
+'''
+	Module containing Classification Dataset Loaders.
+'''
+import random
+import numpy
 from . import tools
 
 def datasetiris(shuffle = None):

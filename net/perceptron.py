@@ -21,9 +21,11 @@ class Perceptron(layer.Layer):
 			: param alpha : learning rate constant hyperparameter
 		'''
 		layer.Layer.__init__(self, inputs, outputs, alpha)
-		self.parameters['weights'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.inputs), (self.outputs, self.inputs))
-		self.parameters['biases'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.inputs), (self.outputs, 1))
-		self.transfer = transfer.Threshold(self.outputs)
+		self.parameters['weights'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.dimensions['inputs']), (self.dimensions['outputs'], self.dimensions['inputs']))
+		self.parameters['biases'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.dimensions['inputs']), (self.dimensions['outputs'], 1))
+		if not hasattr(self, 'units'):
+			self.units = dict()
+		self.units['transfer'] = transfer.Threshold(self.dimensions['outputs'])
 		self.cleardeltas()
 
 	def feedforward(self, inputvector):
@@ -32,9 +34,11 @@ class Perceptron(layer.Layer):
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput.append(self.modifier.feedforward(inputvector))
-		self.previousoutput.append(self.transfer.feedforward(configure.functions['add'](configure.functions['dot'](self.parameters['weights'], self.previousinput[-1]), self.parameters['biases'])))
-		return self.previousoutput[-1]
+		if inputvector.shape != (self.dimensions['inputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['input'].append(self.units['modifier'].feedforward(inputvector))
+		self.history['output'].append(self.units['transfer'].feedforward(configure.functions['add'](configure.functions['dot'](self.parameters['weights'], self.history['input'][-1]), self.parameters['biases'])))
+		return self.history['output'][-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -42,8 +46,10 @@ class Perceptron(layer.Layer):
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
-		self.previousoutput.pop()
-		outputvector = self.transfer.backpropagate(outputvector)
-		self.deltaparameters['weights'] = configure.functions['add'](self.deltaparameters['weights'], configure.functions['dot'](outputvector, configure.functions['transpose'](self.previousinput.pop())))
+		if outputvector.shape != (self.dimensions['outputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['output'].pop()
+		outputvector = self.units['transfer'].backpropagate(outputvector)
+		self.deltaparameters['weights'] = configure.functions['add'](self.deltaparameters['weights'], configure.functions['dot'](outputvector, configure.functions['transpose'](self.history['input'].pop())))
 		self.deltaparameters['biases'] = configure.functions['add'](self.deltaparameters['biases'], outputvector)
 		return configure.functions['dot'](configure.functions['transpose'](self.parameters['weights']), outputvector)

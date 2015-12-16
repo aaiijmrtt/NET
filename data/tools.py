@@ -2,7 +2,7 @@
 	Module containing tools for handling datasets.
 '''
 import os, urllib
-import numpy, Image
+import numpy, PIL.Image
 
 def download(url, filename):
 	'''
@@ -26,11 +26,11 @@ def binaryvector(integer, size):
 
 def imagevector(filename):
 	'''
-		Method to convert image to vector
+		Method to load image as vector
 		: param filename : name of file on disk
 		: returns : image vector and dimensions of original image
 	'''
-	image = Image.open(filename)
+	image = PIL.Image.open(filename)
 	image.load()
 	data = np.asarray(img, dtype = int)
 	rows, columns, channels = data.shape

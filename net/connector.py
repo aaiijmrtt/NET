@@ -4,8 +4,9 @@
 	used to connect combinations of Layers.
 '''
 import numpy
+from . import base
 
-class Split:
+class Split(base.Net):
 	'''
 		Split Connector Function
 		Mathematically, f(x) = [x, x ... x]
@@ -17,11 +18,15 @@ class Split:
 			: param parameter : determines dimension of output feature space,
 				as multiplicity of input feature space
 		'''
-		self.inputs = inputs
-		self.parameter = parameter
-		self.outputs = self.inputs * self.parameter
-		self.previousinput = list()
-		self.previousoutput = list()
+		if not hasattr(self, 'dimensions'):
+			self.dimensions = dict()
+		self.dimensions['inputs'] = inputs
+		self.dimensions['parameter'] = parameter
+		self.dimensions['outputs'] = self.dimensions['inputs'] * self.dimensions['parameter']
+		if not hasattr(self, 'history'):
+			self.history = dict()
+		self.history['input'] = list()
+		self.history['output'] = list()
 
 	def feedforward(self, inputvector):
 		'''
@@ -29,9 +34,11 @@ class Split:
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput.append(inputvector)
-		self.previousoutput.append(numpy.concatenate([self.previousinput[-1]] * self.parameter))
-		return self.previousoutput[-1]
+		if inputvector.shape != (self.dimensions['inputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['input'].append(inputvector)
+		self.history['output'].append(numpy.concatenate([self.history['input'][-1]] * self.dimensions['parameter']))
+		return self.history['output'][-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -39,14 +46,14 @@ class Split:
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
-		self.previousoutput.pop()
-		self.previousinput.pop()
-		deltas = numpy.zeros((self.inputs, 1), dtype = float)
-		for i in range(self.outputs):
-			deltas[i % self.inputs][0] += outputvector[i][0]
+		self.history['output'].pop()
+		self.history['input'].pop()
+		deltas = numpy.zeros((self.dimensions['inputs'], 1), dtype = float)
+		for i in range(self.dimensions['outputs']):
+			deltas[i % self.dimensions['inputs']][0] += outputvector[i][0]
 		return deltas
 
-class MergeSum:
+class MergeSum(base.Net):
 	'''
 		Merge (Sum) Connector Function
 		Mathematically, f([x1, x2 .. xn])(i) = sum_over_j(xj(i))
@@ -58,11 +65,15 @@ class MergeSum:
 			: param parameter : determines dimension of input feature space,
 				as multiplicity of output feature space
 		'''
-		self.outputs = outputs
-		self.parameter = parameter
-		self.inputs = self.outputs * self.parameter
-		self.previousinput = list()
-		self.previousoutput = list()
+		if not hasattr(self, 'dimensions'):
+			self.dimensions = dict()
+		self.dimensions['outputs'] = outputs
+		self.dimensions['parameter'] = parameter
+		self.dimensions['inputs'] = self.dimensions['outputs'] * self.dimensions['parameter']
+		if not hasattr(self, 'history'):
+			self.history = dict()
+		self.history['input'] = list()
+		self.history['output'] = list()
 
 	def feedforward(self, inputvector):
 		'''
@@ -70,11 +81,13 @@ class MergeSum:
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput.append(inputvector)
-		self.previousoutput.append(numpy.zeros((self.outputs, 1), dtype = float))
-		for i in range(self.inputs):
-			self.previousoutput[-1][i % self.outputs][0] += self.previousinput[-1][i][0]
-		return self.previousoutput[-1]
+		if inputvector.shape != (self.dimensions['inputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['input'].append(inputvector)
+		self.history['output'].append(numpy.zeros((self.dimensions['outputs'], 1), dtype = float))
+		for i in range(self.dimensions['inputs']):
+			self.history['output'][-1][i % self.dimensions['outputs']][0] += self.history['input'][-1][i][0]
+		return self.history['output'][-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -82,11 +95,11 @@ class MergeSum:
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
-		self.previousoutput.pop()
-		self.previousinput.pop()
-		return numpy.concatenate([outputvector] * self.parameter)
+		self.history['output'].pop()
+		self.history['input'].pop()
+		return numpy.concatenate([outputvector] * self.dimensions['parameter'])
 
-class MergeProduct:
+class MergeProduct(base.Net):
 	'''
 		Merge (Product) Connector Function
 		Mathematically, f([x1, x2 .. xn])(i) = product_over_j(xj(i))
@@ -98,11 +111,15 @@ class MergeProduct:
 			: param parameter : determines dimension of input feature space,
 				as multiplicity of output feature space
 		'''
-		self.outputs = outputs
-		self.parameter = parameter
-		self.inputs = self.outputs * self.parameter
-		self.previousinput = list()
-		self.previousoutput = list()
+		if not hasattr(self, 'dimensions'):
+			self.dimensions = dict()
+		self.dimensions['outputs'] = outputs
+		self.dimensions['parameter'] = parameter
+		self.dimensions['inputs'] = self.dimensions['outputs'] * self.dimensions['parameter']
+		if not hasattr(self, 'history'):
+			self.history = dict()
+		self.history['input'] = list()
+		self.history['output'] = list()
 
 	def feedforward(self, inputvector):
 		'''
@@ -110,11 +127,13 @@ class MergeProduct:
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput.append(inputvector)
-		self.previousoutput.append(numpy.ones((self.outputs, 1), dtype = float))
-		for i in range(self.inputs):
-			self.previousoutput[-1][i % self.outputs][0] *= self.previousinput[-1][i][0]
-		return self.previousoutput[-1]
+		if inputvector.shape != (self.dimensions['inputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['input'].append(inputvector)
+		self.history['output'].append(numpy.ones((self.dimensions['outputs'], 1), dtype = float))
+		for i in range(self.dimensions['inputs']):
+			self.history['output'][-1][i % self.dimensions['outputs']][0] *= self.history['input'][-1][i][0]
+		return self.history['output'][-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -122,14 +141,14 @@ class MergeProduct:
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
-		deltas = numpy.concatenate([outputvector] * self.parameter)
-		for i in range(self.inputs):
-			deltas[i][0] *= self.previousoutput[-1][i % self.outputs][0] / self.previousinput[-1][i][0]
-		self.previousoutput.pop()
-		self.previousinput.pop()
+		deltas = numpy.concatenate([outputvector] * self.dimensions['parameter'])
+		for i in range(self.dimensions['inputs']):
+			deltas[i][0] *= self.history['output'][-1][i % self.dimensions['outputs']][0] / self.history['input'][-1][i][0]
+		self.history['output'].pop()
+		self.history['input'].pop()
 		return deltas
 
-class Step:
+class Step(base.Net):
 	'''
 		Step Connector Function
 		Mathematically, f(x) = x
@@ -139,10 +158,14 @@ class Step:
 			Constructor
 			: param inputs : dimension of input (and output) feature space
 		'''
-		self.inputs = inputs
-		self.outputs = self.inputs
-		self.previousinput = list()
-		self.previousoutput = list()
+		if not hasattr(self, 'dimensions'):
+			self.dimensions = dict()
+		self.dimensions['inputs'] = inputs
+		self.dimensions['outputs'] = self.dimensions['inputs']
+		if not hasattr(self, 'history'):
+			self.history = dict()
+		self.history['input'] = list()
+		self.history['output'] = list()
 
 	def feedforward(self, inputvector):
 		'''
@@ -150,9 +173,11 @@ class Step:
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput.append(inputvector)
-		self.previousoutput.append(self.previousinput[-1])
-		return self.previousoutput[-1]
+		if inputvector.shape != (self.dimensions['inputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['input'].append(inputvector)
+		self.history['output'].append(self.history['input'][-1])
+		return self.history['output'][-1]
 
 	def backpropagate(self, outputvector):
 		'''
@@ -160,11 +185,11 @@ class Step:
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
-		self.previousinput.pop()
-		self.previousoutput.pop()
+		self.history['input'].pop()
+		self.history['output'].pop()
 		return outputvector
 
-class Constant:
+class Constant(base.Net):
 	'''
 		Identity Connector Function
 		Mathematically, f(x) = p
@@ -176,10 +201,14 @@ class Constant:
 			: param outputs : dimension of output feature space
 			: param parameter : p, as given in its mathematical equation
 		'''
-		self.inputs = inputs
-		self.outputs = outputs
-		self.previousinput = list()
-		self.previousoutput = list()
+		if not hasattr(self, 'dimensions'):
+			self.dimensions = dict()
+		self.dimensions['inputs'] = inputs
+		self.dimensions['outputs'] = outputs
+		if not hasattr(self, 'history'):
+			self.history = dict()
+		self.history['input'] = list()
+		self.history['output'] = list()
 		self.parameter = parameter if parameter is not None else 1.0
 
 	def feedforward(self, inputvector):
@@ -188,9 +217,11 @@ class Constant:
 			: param inputvector : vector in input feature space
 			: returns : fedforward vector mapped to output feature space
 		'''
-		self.previousinput.append(inputvector)
-		self.previousoutput.append(numpy.multiply(self.parameter, numpy.ones((self.outputs, 1), dtype = float)))
-		return self.previousoutput[-1]
+		if inputvector.shape != (self.dimensions['inputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['input'].append(inputvector)
+		self.history['output'].append(numpy.multiply(self.parameter, numpy.ones((self.dimensions['outputs'], 1), dtype = float)))
+		return self.history['output'][-1]
 
 	def backpropagate(self, outputvector): # invisible during backpropagation
 		'''
@@ -198,6 +229,8 @@ class Constant:
 			: param outputvector : derivative vector in output feature space
 			: returns : backpropagated vector mapped to input feature space
 		'''
-		self.previousinput.pop()
-		self.previousoutput.pop()
+		if outputvector.shape != (self.dimensions['outputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['input'].pop()
+		self.history['output'].pop()
 		return outputvector
