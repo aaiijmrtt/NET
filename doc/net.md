@@ -1,23 +1,24 @@
 # Classes
 
-Each class (except Optimizers and Layer Modifiers) has feedforward and
-backpropagate methods, which return the forwardfed output and the
-backpropagated delta vector, respectively. Each object (except for Optimizer
-and Layer Modifier objects) has previousinput and previousoutput datamembers.
-
 1. **Layers**:
 
 	* **Linear**:
 
 			f(x) = W * x + b
 
-		all modifiers are applicable to it
+			all modifiers are applicable to it
+
+	* **Nonlinear**:
+
+			f(x) = sigma(W * x + b)
+
+			all modifiers are applicable to it
 
 	* **Normalizer**:
 
 			f(x)(i) = p1 * (x(i) - m(x(i))) / (v(x(i)) + e) ^ 0.5 + p2
 
-		all modifiers are applicable to it
+			all modifiers are applicable to it
 
 2. **Convolutions**:
 
@@ -25,7 +26,7 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 			f(x) = [W * conv(x) + b]
 
-		all modifiers are applicable to it
+			all modifiers are applicable to it
 
 	* **MaxPooling**:
 
@@ -342,8 +343,17 @@ and Layer Modifier objects) has previousinput and previousoutput datamembers.
 
 	* **Optimizer**: simplifies training and testing
 
-	* **Hyperoptimizer**: optimizes hyperparameters, implements grid search and
-Nelder-Meads algorithm
+	* **Hyperoptimizer**: optimizes hyperparameters
+		* Grid Search
+		* Nelder-Meads Algorithm
+
+	* **DistributedOptimizer**: simplifies training and testing, on a
+heteregenous cluster
+
+	* **DistributedHyperoptimizer**: optimizes hyperparameters, on a
+heterogenous cluster
+		* Grid Search
+		* Nelder-Meads Algorithm
 
 **Note**:
 

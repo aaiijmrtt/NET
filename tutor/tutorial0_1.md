@@ -14,6 +14,9 @@ functions. You might be able to get away without using it, if you know what you
 are doing, but we would still recommend that you install: it is really quite
 neat in itself.
 
+* [PyOpenCL](): net uses PyOpenCL to speed up its internal computations.
+Because your computer is faster than you think.
+
 * [Dispy](http://dispy.sourceforge.net/): net uses Dispy for its distributed
 hyperparameter optimization algorithms. It takes the hairpulling out of
 hyperparameter guessing, if you have multiple computers to spare.

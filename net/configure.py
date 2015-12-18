@@ -1,12 +1,11 @@
 '''
 	Module implementing monkey patches.
-	Used to configure GPU and SIMD settings.
+	Used to configure GPU settings.
 '''
 import numpy
-from . import gpu, simd, optimizer
+from . import gpu
 
 functions = dict()
-classes = dict()
 
 def numericaloptimization(GPU = False):
 	global functions
@@ -32,14 +31,7 @@ def numericaloptimization(GPU = False):
 	functions['transpose'] = gpu.transpose if GPU else numpy.transpose
 	functions['vectorize'] = gpu.vectorize if gpu else numpy.vectorize
 
-def algorithmicparallelization(SIMD = False):
-	global classes
-
-	classes['Optimizer'] = simd.Optimizer if SIMD else optimizer.Optimizer
-	classes['HyperOptimizer'] = simd.Hyperoptimizer if SIMD else optimizer.Hyperoptimizer
-
-def reconfigure(GPU = False, SIMD = False):
+def reconfigure(GPU = False):
 	numericaloptimization(GPU)
-	algorithmicparallelization(SIMD)
 
-reconfigure(False, False)
+reconfigure(False)

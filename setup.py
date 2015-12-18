@@ -21,6 +21,6 @@ setuptools.setup(name = 'net',
 		'Programming Language :: Python :: 3'
 	],
 	packages = ['net', 'bench', 'data'],
-	install_requires = ['numpy', 'matplotlib', 'pyopencl', 'dispy'],
+	install_requires = ['numpy>=1.10', 'matplotlib>=1.5', 'pyopencl>=2015.2', 'dispy>=4.6'],
 	test_suite = 'test'
 )
