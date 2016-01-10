@@ -14,6 +14,7 @@ def numericaloptimization(GPU = False):
 	functions['amax'] = gpu.amax if GPU else numpy.amax
 	functions['amin'] = gpu.amin if GPU else numpy.amin
 	functions['argmin'] = gpu.argmin if GPU else numpy.argmin
+	functions['argmax'] = gpu.argmax if GPU else numpy.argmax
 	functions['divide'] = gpu.divide if GPU else numpy.divide
 	functions['dot'] = gpu.dot if GPU else numpy.dot
 	functions['exp'] = gpu.exp if GPU else numpy.exp

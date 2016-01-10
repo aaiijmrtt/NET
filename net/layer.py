@@ -179,6 +179,52 @@ class Linear(Layer):
 		self.deltaparameters['biases'] = configure.functions['add'](self.deltaparameters['biases'], outputvector)
 		return configure.functions['dot'](configure.functions['transpose'](self.parameters['weights']), outputvector)
 
+class OneHotLinear(Layer):
+	'''
+		One Hot Linear Layer
+		Mathematically, f(x) = W * x + b, when x is a one hot binary vector
+	'''
+	def __init__(self, inputs, outputs, alpha = None):
+		'''
+			Constructor
+			: param inputs : dimension of input feature space
+			: param outputs : dimension of output feature space
+			: param alpha : parameter learning rate
+		'''
+		Layer.__init__(self, inputs, outputs, alpha)
+		self.history['index'] = list()
+		self.parameters['weights'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.dimensions['inputs']), (self.dimensions['outputs'], self.dimensions['inputs']))
+		self.parameters['biases'] = numpy.random.normal(0.0, 1.0 / math.sqrt(self.dimensions['inputs']), (self.dimensions['outputs'], 1))
+		self.cleardeltas()
+
+	def feedforward(self, inputvector):
+		'''
+			Method to feedforward a vector through the layer
+			: param inputvector : vector in input feature space
+			: returns : fedforward vector mapped to output feature space
+		'''
+		if inputvector.shape != (self.dimensions['inputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['input'].append(self.units['modifier'].feedforward(inputvector))
+		self.history['index'].append(configure.functions['argmax'](self.history['inputs']))
+		self.history['output'].append(configure.functions['add'](self.parameters['weights'][-1][:, self.history['index'][-1]].reshape(self.dimensions['outputs'], 1) , self.parameters['biases']))
+		return self.history['output'][-1]
+
+	def backpropagate(self, outputvector):
+		'''
+			Method to backpropagate derivatives through the layer
+			: param outputvector : derivative vector in output feature space
+			: returns : backpropagated vector mapped to input feature space
+		'''
+		if outputvector.shape != (self.dimensions['outputs'], 1):
+			self.dimensionsError(self.__class__.__name__)
+		self.history['output'].pop()
+		self.history['input'].pop()
+		self.deltaparameters['weights'][:, self.history['index'][-1]] = configure.functions['add'](self.deltaparameters['weights'][:, self.history['index'][-1]], outputvector.reshape(1, self.dimensions['output']))
+		self.deltaparameters['biases'] = configure.functions['add'](self.deltaparameters['biases'], outputvector)
+		self.history['index'].pop()
+		return configure.functions['dot'](configure.functions['transpose'](self.parameters['weights']), outputvector) # unoptimizable (?)
+
 class Nonlinear(Layer):
 	'''
 		NonLinear Layer

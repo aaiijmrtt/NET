@@ -8,6 +8,12 @@
 
 			all modifiers are applicable to it
 
+	* **OneHotLinear**:
+
+			f(x) = W * x + b, when x is a one hot binary vector
+
+			all modifiers are applicable to it
+
 	* **Nonlinear**:
 
 			f(x) = sigma(W * x + b)
