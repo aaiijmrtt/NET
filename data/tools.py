@@ -40,3 +40,49 @@ def imagevector(filename):
 			for k in range(channels):
 				vector[(k * rows + i) * columns + j][0] = data[i][j][k]
 	return vector, (rows, columns, channels)
+
+def standardization(array):
+	'''
+		Method to standardize a list of vectors
+		: param array : list of vectors
+		: returns : standardized list of vectors
+	'''
+	mean = numpy.mean(array, axis = 0)
+	std = numpy.std(array, axis = 0)
+	for i in range(len(array)):
+		array[i] = numpy.divide(numpy.subtract(array[i], mean), std)
+	return array
+
+def normalization(array):
+	'''
+		Method to normalize a list of vectors
+		: param array : list of vectors
+		: returns : normalize list of vectors
+	'''
+	minimum = numpy.amin(array, axis = 0)
+	maximum = numpy.amax(array, axis = 0)
+	for i in range(len(array)):
+		array[i] = numpy.divide(numpy.subtract(array[i], minimum), numpy.subtract(maximum, minimum))
+	return array
+
+def pairedstandardization(arraypairs):
+	'''
+		Method to standardize a list of pairs of vectors
+		: param array : list of pairs of vectors
+		: returns : standardized list of pairs of vectors
+	'''
+	primaryarray, secondaryarray = zip(*arraypairs)
+	primaryarray = standardization(list(primaryarray))
+	secondaryarry = standardization(list(secondaryarray))
+	return zip(primaryarray, secondaryarray)
+
+def pairednormalization(arraypairs):
+	'''
+		Method to normalize a list of pairs of vectors
+		: param array : list of pairs of vectors
+		: returns : normalized list of pairs of vectors
+	'''
+	primaryarray, secondaryarray = zip(*arraypairs)
+	primaryarray = normalization(list(primaryarray))
+	secondaryarray = normalization(list(secondaryarray))
+	return zip(primaryarray, secondaryarray)
