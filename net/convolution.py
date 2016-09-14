@@ -88,13 +88,21 @@ class Convolutional(layer.Layer, Convolution):
 			: param padding : dimension of padding added to periphery of spatial dimension
 		'''
 		Convolution.__init__(self, height, width, depth, extent, stride, padding)
-		layer.Layer.__init__(self, self.dimensions['height'] * self.dimensions['width'] * self.dimensions['depth'], alpha)
-		self.dimensions['outputs'] = self.dimensions['rows'] * self.dimensions['columns']
+		layer.Layer.__init__(self, self.dimensions['height'] * self.dimensions['width'] * self.dimensions['depth'], self.dimensions['rows'] * self.dimensions['columns'], alpha)
 		if not hasattr(self, 'parameters'):
 			self.parameters = dict()
 		self.parameters['weights'] = numpy.ones((1, self.dimensions['extent'] * self.dimensions['extent'] * self.dimensions['depth']), dtype = float)
 		self.parameters['biases'] = numpy.ones((1, 1), dtype = float)
 		self.cleardeltas()
+
+	def applylearningrate(self, alpha = None):
+		'''
+			Method to apply learning gradient descent optimization
+			: param alpha : learning rate constant hyperparameter
+		'''
+		if alpha is None:
+			alpha = 0.05 / self.dimensions['outputs'] # default set to 0.05 / output_units
+ 		self.units['modifier'].applylearningrate(alpha)
 
 	def feedforward(self, inputvector): # ignores dropout
 		'''

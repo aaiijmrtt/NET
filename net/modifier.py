@@ -190,7 +190,7 @@ class Decay(base.Net):
 		'''
 			Method to prepare layer for training
 		'''
-		self.__init__(self.backpointer, self.eta)
+		self.__init__(self.backpointer, self.backpointer.metaparameters['eta'])
 
 	def testingsetup(self):
 		'''
@@ -230,7 +230,7 @@ class Dropout(base.Net):
 		'''
 			Method to prepare layer for training
 		'''
-		self.__init__(self.backpointer, self.rho)
+		self.__init__(self.backpointer, self.backpointer.metaparameters['rho'])
 
 	def testingsetup(self):
 		'''
