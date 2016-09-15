@@ -22,7 +22,7 @@ def datasetand(size = None, variables = None, shuffle = None):
 		x = tools.binaryvector(i % count, variables)
 		y = numpy.empty((1, 1))
 		y[0][0] = 1.0 if numpy.sum(x) == variables else 0.0
-		dataset.append((x, y))
+		dataset.append([x, y])
 	if shuffle:
 		random.shuffle(dataset)
 	return dataset
@@ -44,7 +44,7 @@ def datasetor(size = None, variables = None, shuffle = None):
 		x = tools.binaryvector(i % count, variables)
 		y = numpy.empty((1, 1))
 		y[0][0] = 1.0 if numpy.sum(x) > 0.0 else 0.0
-		dataset.append((x, y))
+		dataset.append([x, y])
 	if shuffle:
 		random.shuffle(dataset)
 	return dataset
@@ -66,7 +66,7 @@ def datasetnand(size = None, variables = None, shuffle = None):
 		x = tools.binaryvector(i % count, variables)
 		y = numpy.empty((1, 1))
 		y[0][0] = 1.0 if numpy.sum(x) < variables else 0.0
-		dataset.append((x, y))
+		dataset.append([x, y])
 	if shuffle:
 		random.shuffle(dataset)
 	return dataset
@@ -88,7 +88,7 @@ def datasetnor(size = None, variables = None, shuffle = None):
 		x = tools.binaryvector(i % count, variables)
 		y = numpy.empty((1, 1))
 		y[0][0] = 1.0 if numpy.sum(x) == 0.0 else 0.0
-		dataset.append((x, y))
+		dataset.append([x, y])
 	if shuffle:
 		random.shuffle(dataset)
 	return dataset
@@ -110,7 +110,7 @@ def datasetxor(size = None, variables = None, shuffle = None):
 		x = tools.binaryvector(i % count, variables)
 		y = numpy.empty((1, 1))
 		y[0][0] = 1.0 if numpy.sum(x) % 2.0 == 0.0 else 0.0
-		dataset.append((x, y))
+		dataset.append([x, y])
 	if shuffle:
 		random.shuffle(dataset)
 	return dataset

@@ -236,41 +236,45 @@ class Hyperoptimizer(Optimizer):
 		self.net = copy.deepcopy(bestnet)
 		return [(cost, point.tolist()) for cost, point in zip(costs, simplex)]
 
-def distributedcomputation(serialnet, trainingset, testingset, validationset = None, criterion = None, batch = 1, iterations = 1, classification = None):
+def distributedcomputation(serialnet, netarrays, trainingset, testingset, validationset = None, criterion = None, batch = 1, iterations = 1, classification = None):
 	'''
 		Constructor
 		: param serialnet : serialized net whose parameters are to be optimized
-		: param trainingset : absolute path to file containing serialized supervised data set used for training
-		: param testingset : absolute path to file containing serialized supervised data set used for testing
-		: param validationset : absolute path to file containing serialized supervised data set used for validation
+		: param netarrays : list of numpy arrays in network
+		: param trainingset : tuple of absolute path to directory and file containing serialized supervised data set used for training
+		: param testingset : tuple of absolute path to directory and file containing serialized supervised data set used for testing
+		: param validationset : tuple of absolute path to directory and file containing serialized supervised data set used for validation
 		: param criterion : class name of error criterion
 		: param batch : training minibatch size
 		: param iterations : iteration threshold for termination
 		: param classification : parameter to control whether task is classification
 	'''
 	import net, data
-	myoptimizer = net.DistributedOptimizer(serialnet, trainingset, testingset, validationset, criterion)
+	myoptimizer = net.DistributedOptimizer(serialnet, netarrays, trainingset, testingset, validationset, criterion)
 	myoptimizer.train(batch, iterations)
-	return data.models.serialize(myoptimizer.validate(classification)), data.models.serialize(myoptimizer.net)
+	classify, classifyarray = data.models.serialize(myoptimizer.validate(classification))
+	model, modelarray = data.models.serialize(myoptimizer.net)
+	return classify, classifyarray, model, modelarray
 
 class DistributedOptimizer(Optimizer):
 	'''
 		Distributed Optimizer Class
 	'''
-	def __init__(self, serialnet, trainingset, testingset, validationset = None, criterion = None):
+	def __init__(self, serialnet, netarrays, trainingset, testingset, validationset = None, criterion = None):
 		'''
 			Constructor
 			: param serialnet : serialized net whose parameters are to be optimized
-			: param trainingset : absolute path to file containing serialized supervised data set used for training
-			: param testingset : absolute path to file containing serialized supervised data set used for testing
-			: param validationset : absolute path to file containing serialized supervised data set used for validation
+			: param netarrays : list of numpy arrays in network
+			: param trainingset : tuple of absolute path to directory and file containing serialized supervised data set used for training
+			: param testingset : tuple of absolute path to directory and file containing serialized supervised data set used for testing
+			: param validationset : tuple of absolute path to file containing serialized supervised data set used for validation
 			: param criterion : class name of error criterion
 		'''
 		import net
-		network = data.models.deserialize(serialnet)
-		trainingset = data.models.load(trainingset)
-		testingset = data.models.load(testingset)
-		validationset = data.models.load(validationset) if validationset is not None else self.testingset # default set to testing set
+		network = data.models.deserialize(serialnet, netarrays)
+		trainingset = data.models.load(*trainingset)
+		testingset = data.models.load(*testingset)
+		validationset = data.models.load(*validationset) if validationset is not None else self.testingset # default set to testing set
 		criterion = getattr(getattr(net, criterion), 'compute') if criterion is not None else criterion
 		Optimizer.__init__(self, network, trainingset, testingset, validationset, criterion)
 
@@ -282,9 +286,9 @@ class DistributedHyperoptimizer(base.Net):
 		'''
 			Constructor
 			: param net : net whose parameters are to be optimized
-			: param trainingset : absolute path to file containing serialized supervised data set used for training
-			: param testingset : absolute path to file containing serialized supervised data set used for testing
-			: param validationset : absolute path to file containing serialized supervised data set used for validation
+			: param trainingset : tuple of absolute path to directory and file containing serialized supervised data set used for training
+			: param testingset : tuple of absolute path to directory and file containing serialized supervised data set used for testing
+			: param validationset : tuple of absolute path to directory and file containing serialized supervised data set used for validation
 			: param criterion : class name of error criterion
 			: param hypercriterion : criterion used to scalarize vectorized error
 		'''
@@ -317,7 +321,8 @@ class DistributedHyperoptimizer(base.Net):
 			optimizenet = copy.deepcopy(self.net)
 			for i in range(len(hyperparameters)):
 				getattr(optimizenet, hyperparameters[i][0])(hyperparameters[i][1][indices[i]])
-			job = cluster.submit(data.models.serialize(optimizenet), self.trainingset, self.testingset, self.validationset, self.criterion, batch, iterations, classification)
+			model, arrays = data.models.serialize(optimizenet)
+			job = cluster.submit(model, arrays, self.trainingset, self.testingset, self.validationset, self.criterion, batch, iterations, classification)
 			job.id = copy.deepcopy(indices)
 			jobs.append(job)
 
@@ -330,16 +335,18 @@ class DistributedHyperoptimizer(base.Net):
 					break
 
 		for job in jobs:
-			serialvalidation, serialnet = job()
-			error = self.hypercriterion(data.models.deserialize(serialvalidation))
+			serialvalidation, serialvalidationarrays, serialnet, serialnetarrays = job()
+			error = self.hypercriterion(data.models.deserialize(serialvalidation, serialvalidationarrays))
 			if error < besterror:
 				besterror = error
 				bestindices = job.id
 				bestnet = serialnet
+				bestnetarrays = serialnetarrays
 
-		self.net = data.models.deserialize(bestnet)
-		return [hyperparameters[i][1][bestindices[i]] for i in range(len(hyperparameters))]
+		self.net = data.models.deserialize(bestnet, bestnetarrays)
+		return [hyperparameters[i][1][bestindices[i]] for i in range(len(hyperparameters))], besterror
 
+	# todo: fix distributed computation version mismatch
 	def NelderMead(self, hyperparameters, batch = 1, iterations = 1, classification = None, alpha = 1.0, gamma = 2.0, rho = 0.5, sigma = 0.5, threshold = 0.05, hyperiterations = 10): # defaults set
 		'''
 			Method to optimize hyperparameters by Nelder Mead Algorithm

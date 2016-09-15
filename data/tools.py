@@ -32,7 +32,7 @@ def imagevector(filename):
 	'''
 	image = PIL.Image.open(filename)
 	image.load()
-	data = np.asarray(img, dtype = int)
+	data = numpy.asarray(image, dtype = int)
 	rows, columns, channels = data.shape
 	vector = numpy.empty((rows * columns * channels, 1), dtype = float)
 	for i in range(rows):

@@ -28,7 +28,7 @@ def datasetiris(shuffle = None):
 			inputvector = numpy.array(features[: -1], dtype = float).reshape((inputs, 1))
 			outputvector = numpy.zeros((outputs, 1), dtype = float)
 			outputvector[classnames[features[-1]]][0] = 1.0
-			dataset.append((inputvector, outputvector))
+			dataset.append([inputvector, outputvector])
 	if shuffle:
 		random.shuffle(dataset)
 	return dataset
@@ -53,7 +53,7 @@ def datasetMNIST(shuffle = None):
 			inputvector = numpy.array(features[: -1], dtype = float).reshape((inputs, 1))
 			outputvector = numpy.zeros((outputs, 1), dtype = float)
 			outputvector[int(features[-1])][0] = 1.0
-			dataset.append((inputvector, outputvector))
+			dataset.append([inputvector, outputvector])
 	url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/optdigits/optdigits.tes'
 	filename = 'mnist.test'
 	tools.download(url, filename)
@@ -63,7 +63,7 @@ def datasetMNIST(shuffle = None):
 			inputvector = numpy.array(features[: -1], dtype = float).reshape((inputs, 1))
 			outputvector = numpy.zeros((outputs, 1), dtype = float)
 			outputvector[int(features[-1])][0] = 1.0
-			dataset.append((inputvector, outputvector))
+			dataset.append([inputvector, outputvector])
 	if shuffle:
 		random.shuffle(dataset)
 	return dataset

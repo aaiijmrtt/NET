@@ -24,7 +24,7 @@ def datasetbostonhousing(shuffle = None):
 			crim, zn, indus, chas, nox, rm, age, dis, rad, tax, ptratio, b, lstat, medv = line.strip().split()
 			inputvector = numpy.array([[float(crim)], [float(zn)], [float(indus)], [float(chas)], [float(nox)], [float(rm)], [float(age)], [float(dis)], [float(rad)], [float(tax)], [float(ptratio)], [float(b)], [float(lstat)]])
 			outputvector = numpy.array([[float(medv)]])
-			dataset.append((inputvector, outputvector))
+			dataset.append([inputvector, outputvector])
 	if shuffle:
 		random.shuffle(dataset)
 	return dataset
