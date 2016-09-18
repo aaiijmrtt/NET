@@ -346,7 +346,6 @@ class DistributedHyperoptimizer(base.Net):
 		self.net = data.models.deserialize(bestnet, bestnetarrays)
 		return [hyperparameters[i][1][bestindices[i]] for i in range(len(hyperparameters))], besterror
 
-	# todo: fix distributed computation version mismatch
 	def NelderMead(self, hyperparameters, batch = 1, iterations = 1, classification = None, alpha = 1.0, gamma = 2.0, rho = 0.5, sigma = 0.5, threshold = 0.05, hyperiterations = 10): # defaults set
 		'''
 			Method to optimize hyperparameters by Nelder Mead Algorithm
@@ -365,7 +364,8 @@ class DistributedHyperoptimizer(base.Net):
 			optimizenet = copy.deepcopy(self.net)
 			for i in range(dimensions):
 				getattr(optimizenet, hyperparameters[0][i])(point[i])
-			job = cluster.submit(data.models.serialize(optimizenet), self.trainingset, self.testingset, self.validationset, self.criterion, batch, iterations, classification)
+			model, arrays = data.models.serialize(optimizenet)
+			job = cluster.submit(model, arrays, self.trainingset, self.testingset, self.validationset, self.criterion, batch, iterations, classification)
 			job.id = point
 			jobs.append(job)
 
@@ -383,11 +383,13 @@ class DistributedHyperoptimizer(base.Net):
 			submittocluster(self, cluster, jobs, dimensions, hyperparameters, point, batch, iterations, classification)
 
 		for job in jobs:
-			serialvalidation, serialnet = job()
-			error = self.hypercriterion(data.models.deserialize(serialvalidation))
+			serialvalidation, serialvalidationarrays, serialnet, serialnetarrays = job()
+			error = self.hypercriterion(data.models.deserialize(serialvalidation, serialvalidationarrays))
 			if error < besterror:
 				besterror = error
+				bestindices = job.id
 				bestnet = serialnet
+				bestnetarrays = serialnetarrays
 			costs.append(error)
 
 		for iteration in range(hyperiterations):
@@ -409,50 +411,56 @@ class DistributedHyperoptimizer(base.Net):
 			contractedpoint2 = configure.functions['add'](centroid, configure.functions['multiply'](rho, configure.functions['subtract'](simplex[-1], centroid)))
 			submittocluster(self, cluster, jobs, dimensions, hyperparameters, contractedpoint2, batch, iterations, classification)
 
-			serialvalidation, serialreflectednet = jobs[0]()
-			reflectederror = self.hypercriterion(data.models.deserialize(serialvalidation))
-			serialvalidation, serialexpandednet = jobs[1]()
-			expandederror = self.hypercriterion(data.models.deserialize(serialvalidation))
-			serialvalidation, serialcontractednet1 = jobs[2]()
-			contractederror1 = self.hypercriterion(data.models.deserialize(serialvalidation))
-			serialvalidation, serialcontractednet2 = jobs[3]()
-			contractederror2 = self.hypercriterion(data.models.deserialize(serialvalidation))
+			serialvalidation, serialvalidationarrays, serialreflectednet, serialreflectednetarrays = jobs[0]()
+			reflectederror = self.hypercriterion(data.models.deserialize(serialvalidation, serialvalidationarrays))
+			serialvalidation, serialvalidationarrays, serialexpandednet, serialexpandednetarrays = jobs[1]()
+			expandederror = self.hypercriterion(data.models.deserialize(serialvalidation, serialvalidationarrays))
+			serialvalidation, serialvalidationarrays, serialcontractednet1, serialcontractednetarrays1 = jobs[2]()
+			contractederror1 = self.hypercriterion(data.models.deserialize(serialvalidation, serialvalidationarrays))
+			serialvalidation, serialvalidationarrays, serialcontractednet2, serialcontractednetarrays2 = jobs[3]()
+			contractederror2 = self.hypercriterion(data.models.deserialize(serialvalidation, serialvalidationarrays))
 
 			if reflectederror < besterror:
 				besterror = reflectederror
-				bestnet = reflectednet
+				bestnet = serialreflectednet
+				bestnetarrays = serialreflectednetarrays
 
 			if costs[0] <= reflectederror < costs[-2]:
 				simplex[-1] = reflectedpoint
-				costs[-1] = serialreflectederror
+				costs[-1] = reflectederror
 
 			elif reflectederror < costs[0]:
 				if expandederror < besterror:
 					besterror = expandederror
 					bestnet = serialexpandednet
+					bestnetarrays = serialexpandednetarrays
 
 				if expandederror < reflectederror:
 					simplex[-1] = expandedpoint
-					costs[-1] = serialexpandederror
+					costs[-1] = expandederror
 				else:
 					simplex[-1] = reflectedpoint
-					costs[-1] = serialreflectederror
+					costs[-1] = reflectederror
 
 			else:
 				if reflectederror < costs[-1]:
 					contractederror = contractederror1
+					contractedpoint = contractedpoint1
 					if contractederror < besterror:
 						besterror = contractederror
 						bestnet = serialcontractednet1
+						bestnetarrays = serialcontractednetarrays1
 				else:
 					contractederror = contractederror2
+					contractedpoint = contractedpoint2
 					if contractederror < besterror:
 						besterror = contractederror
 						bestnet = serialcontractednet2
+						bestnetarrays = serialcontractednetarrays2
 
 				if contractederror < costs[-1]:
 					simplex[-1] = contractedpoint
-					costs[-1] = serialcontractederror
+					costs[-1] = contractederror
 
 				else:
 					jobs = list()
@@ -461,11 +469,12 @@ class DistributedHyperoptimizer(base.Net):
 						submittocluster(self, cluster, jobs, dimensions, hyperparameters, simplex[i], batch, iterations, classification)
 
 					for i in range(len(jobs)):
-						serialvalidation, serialnet = job()
-						costs[i + 1] = self.hypercriterion(data.models.deserialize(serialvalidation))
+						serialvalidation, serialvalidationarrays, serialnet, serialnetarrays = job()
+						costs[i + 1] = self.hypercriterion(data.models.deserialize(serialvalidation, serialvalidationarrays))
 						if costs[i + 1] < besterror:
 							besterror = costs[i + 1]
 							bestnet = serialnet
+							bestnetarrays = serialnetarrays
 
-		self.net = data.models.deserialize(bestnet)
+		self.net = data.models.deserialize(bestnet, bestnetarrays)
 		return [(cost, point.tolist()) for cost, point in zip(costs, simplex)]
